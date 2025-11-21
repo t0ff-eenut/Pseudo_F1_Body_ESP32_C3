@@ -1,0 +1,57 @@
+Command: cmake -G Ninja -DPYTHON_DEPS_CHECKED=1 -DPYTHON=C:\Users\memor\.espressif\python_env\idf5.5_py3.11_env\Scripts\python.exe -DESP_PLATFORM=1 -DIDF_TARGET=esp32c3 -DCCACHE_ENABLE=0 C:\Users\memor\Desktop\ESP32_Body\blink
+-- Found Git: C:/Users/memor/.espressif/tools/idf-git/2.39.2/cmd/git.exe (found version "2.39.2.windows.1")
+-- Minimal build - ON
+-- The C compiler identification is GNU 14.2.0
+-- The CXX compiler identification is GNU 14.2.0
+-- The ASM compiler identification is GNU
+-- Found assembler: C:/Users/memor/.espressif/tools/riscv32-esp-elf/esp-14.2.0_20241119/riscv32-esp-elf/bin/riscv32-esp-elf-gcc.exe
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: C:/Users/memor/.espressif/tools/riscv32-esp-elf/esp-14.2.0_20241119/riscv32-esp-elf/bin/riscv32-esp-elf-gcc.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Users/memor/.espressif/tools/riscv32-esp-elf/esp-14.2.0_20241119/riscv32-esp-elf/bin/riscv32-esp-elf-g++.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Building ESP-IDF components for target esp32c3
+NOTICE: Processing 2 dependencies:
+NOTICE: [1/2] espressif/led_strip (3.0.2)
+NOTICE: [2/2] idf (5.5.0)
+-- Project sdkconfig file C:/Users/memor/Desktop/ESP32_Body/blink/sdkconfig
+Loading defaults file C:/Users/memor/Desktop/ESP32_Body/blink/sdkconfig.defaults...
+Loading defaults file C:/Users/memor/Desktop/ESP32_Body/blink/sdkconfig.defaults.esp32c3...
+-- Adding linker script C:/Users/memor/esp/v5.5/esp-idf/components/riscv/ld/rom.api.ld
+-- Found Python3: C:/Users/memor/.espressif/python_env/idf5.5_py3.11_env/Scripts/python.exe (found version "3.11.2") found components: Interpreter
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Performing Test C_COMPILER_SUPPORTS_WFORMAT_SIGNEDNESS
+-- Performing Test C_COMPILER_SUPPORTS_WFORMAT_SIGNEDNESS - Success
+-- USING O3
+-- App "blink" version: 50a26db-dirty
+-- Adding linker script C:/Users/memor/Desktop/ESP32_Body/blink/build/esp-idf/esp_system/ld/memory.ld
+-- Adding linker script C:/Users/memor/Desktop/ESP32_Body/blink/build/esp-idf/esp_system/ld/sections.ld.in
+-- Adding linker script C:/Users/memor/esp/v5.5/esp-idf/components/esp_rom/esp32c3/ld/esp32c3.rom.ld
+-- Adding linker script C:/Users/memor/esp/v5.5/esp-idf/components/esp_rom/esp32c3/ld/esp32c3.rom.api.ld
+-- Adding linker script C:/Users/memor/esp/v5.5/esp-idf/components/esp_rom/esp32c3/ld/esp32c3.rom.bt_funcs.ld
+-- Adding linker script C:/Users/memor/esp/v5.5/esp-idf/components/esp_rom/esp32c3/ld/esp32c3.rom.libgcc.ld
+-- Adding linker script C:/Users/memor/esp/v5.5/esp-idf/components/esp_rom/esp32c3/ld/esp32c3.rom.version.ld
+-- Adding linker script C:/Users/memor/esp/v5.5/esp-idf/components/esp_rom/esp32c3/ld/esp32c3.rom.ble_master.ld
+-- Adding linker script C:/Users/memor/esp/v5.5/esp-idf/components/esp_rom/esp32c3/ld/esp32c3.rom.ble_50.ld
+-- Adding linker script C:/Users/memor/esp/v5.5/esp-idf/components/esp_rom/esp32c3/ld/esp32c3.rom.ble_smp.ld
+-- Adding linker script C:/Users/memor/esp/v5.5/esp-idf/components/esp_rom/esp32c3/ld/esp32c3.rom.ble_dtm.ld
+-- Adding linker script C:/Users/memor/esp/v5.5/esp-idf/components/esp_rom/esp32c3/ld/esp32c3.rom.ble_test.ld
+-- Adding linker script C:/Users/memor/esp/v5.5/esp-idf/components/esp_rom/esp32c3/ld/esp32c3.rom.ble_scan.ld
+-- Adding linker script C:/Users/memor/esp/v5.5/esp-idf/components/esp_rom/esp32c3/ld/esp32c3.rom.eco3.ld
+-- Adding linker script C:/Users/memor/esp/v5.5/esp-idf/components/esp_rom/esp32c3/ld/esp32c3.rom.eco3_bt_funcs.ld
+-- Adding linker script C:/Users/memor/esp/v5.5/esp-idf/components/esp_rom/esp32c3/ld/esp32c3.rom.libc.ld
+-- Adding linker script C:/Users/memor/esp/v5.5/esp-idf/components/esp_rom/esp32c3/ld/esp32c3.rom.libc-suboptimal_for_misaligned_mem.ld
+-- Adding linker script C:/Users/memor/esp/v5.5/esp-idf/components/esp_rom/esp32c3/ld/esp32c3.rom.newlib.ld
+-- Adding linker script C:/Users/memor/esp/v5.5/esp-idf/components/soc/esp32c3/ld/esp32c3.peripherals.ld
+-- Components: app_update bootloader bootloader_support cxx driver efuse esp_app_format esp_bootloader_format esp_common esp_driver_ana_cmpr esp_driver_bitscrambler esp_driver_dac esp_driver_gpio esp_driver_gptimer esp_driver_i2c esp_driver_i2s esp_driver_ledc esp_driver_mcpwm esp_driver_parlio esp_driver_pcnt esp_driver_rmt esp_driver_sdio esp_driver_sdm esp_driver_sdmmc esp_driver_sdspi esp_driver_spi esp_driver_tsens esp_driver_twai esp_driver_uart esp_driver_usb_serial_jtag esp_hw_support esp_mm esp_partition esp_pm esp_ringbuf esp_rom esp_security esp_system esp_timer espressif__led_strip esptool_py freertos hal heap log main mbedtls newlib nvs_flash partition_table pthread riscv sdmmc soc spi_flash
+-- Component paths: C:/Users/memor/esp/v5.5/esp-idf/components/app_update C:/Users/memor/esp/v5.5/esp-idf/components/bootloader C:/Users/memor/esp/v5.5/esp-idf/components/bootloader_support C:/Users/memor/esp/v5.5/esp-idf/components/cxx C:/Users/memor/esp/v5.5/esp-idf/components/driver C:/Users/memor/esp/v5.5/esp-idf/components/efuse C:/Users/memor/esp/v5.5/esp-idf/components/esp_app_format C:/Users/memor/esp/v5.5/esp-idf/components/esp_bootloader_format C:/Users/memor/esp/v5.5/esp-idf/components/esp_common C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_ana_cmpr C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_bitscrambler C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_dac C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_gpio C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_gptimer C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_i2c C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_i2s C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_ledc C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_mcpwm C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_parlio C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_pcnt C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_rmt C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_sdio C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_sdm C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_sdmmc C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_sdspi C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_spi C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_tsens C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_twai C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_uart C:/Users/memor/esp/v5.5/esp-idf/components/esp_driver_usb_serial_jtag C:/Users/memor/esp/v5.5/esp-idf/components/esp_hw_support C:/Users/memor/esp/v5.5/esp-idf/components/esp_mm C:/Users/memor/esp/v5.5/esp-idf/components/esp_partition C:/Users/memor/esp/v5.5/esp-idf/components/esp_pm C:/Users/memor/esp/v5.5/esp-idf/components/esp_ringbuf C:/Users/memor/esp/v5.5/esp-idf/components/esp_rom C:/Users/memor/esp/v5.5/esp-idf/components/esp_security C:/Users/memor/esp/v5.5/esp-idf/components/esp_system C:/Users/memor/esp/v5.5/esp-idf/components/esp_timer C:/Users/memor/Desktop/ESP32_Body/blink/managed_components/espressif__led_strip C:/Users/memor/esp/v5.5/esp-idf/components/esptool_py C:/Users/memor/esp/v5.5/esp-idf/components/freertos C:/Users/memor/esp/v5.5/esp-idf/components/hal C:/Users/memor/esp/v5.5/esp-idf/components/heap C:/Users/memor/esp/v5.5/esp-idf/components/log C:/Users/memor/Desktop/ESP32_Body/blink/main C:/Users/memor/esp/v5.5/esp-idf/components/mbedtls C:/Users/memor/esp/v5.5/esp-idf/components/newlib C:/Users/memor/esp/v5.5/esp-idf/components/nvs_flash C:/Users/memor/esp/v5.5/esp-idf/components/partition_table C:/Users/memor/esp/v5.5/esp-idf/components/pthread C:/Users/memor/esp/v5.5/esp-idf/components/riscv C:/Users/memor/esp/v5.5/esp-idf/components/sdmmc C:/Users/memor/esp/v5.5/esp-idf/components/soc C:/Users/memor/esp/v5.5/esp-idf/components/spi_flash
+-- Configuring done (8.0s)
+-- Generating done (0.7s)
+-- Build files have been written to: C:/Users/memor/Desktop/ESP32_Body/blink/build
