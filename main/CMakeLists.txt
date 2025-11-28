@@ -3,6 +3,15 @@
 
    idf_component_register(
     SRCS ${component_sources}
-    INCLUDE_DIRS "custom_esp_gpio" "." 
-    REQUIRES driver nvs_flash esp_timer esp_driver_ledc # 내장 ESP-IDF 컴포넌트
-    led_strip)  # 관리형 컴포넌트 (Managed Components)
+    INCLUDE_DIRS 
+        "."                                          # main.c, project_top.h
+        "hw_level"                                   # hw_level_top.h, hw_level_handle.h
+        "hw_level/custom_esp_gpio"
+        "hw_level/custom_esp_nvs"
+    REQUIRES 
+        esp_timer
+        driver
+        esp_driver_ledc
+        led_strip
+        nvs_flash 
+    )  # 관리형 컴포넌트 (Managed Components)

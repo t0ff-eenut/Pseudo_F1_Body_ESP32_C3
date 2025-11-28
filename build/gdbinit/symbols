@@ -18,8 +18,8 @@ end
 
 # Load bootloader symbols
 set confirm off
-    add-symbol-file C:/Users/memor/Desktop/ESP32_Body/blink/build/bootloader/bootloader.elf
+    add-symbol-file C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/build/bootloader/bootloader.elf
 set confirm on
 
 # Load application symbols
-file C:/Users/memor/Desktop/ESP32_Body/blink/build/blink.elf
+file C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/build/blink.elf

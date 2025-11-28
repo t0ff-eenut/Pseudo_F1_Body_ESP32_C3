@@ -2,34 +2,34 @@
 	"sources" : 
 	[
 		{
-			"file" : "C:/Users/memor/Desktop/ESP32_Body/blink/build/CMakeFiles/bootloader"
+			"file" : "C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/build/CMakeFiles/bootloader"
 		},
 		{
-			"file" : "C:/Users/memor/Desktop/ESP32_Body/blink/build/CMakeFiles/bootloader.rule"
+			"file" : "C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/build/CMakeFiles/bootloader.rule"
 		},
 		{
-			"file" : "C:/Users/memor/Desktop/ESP32_Body/blink/build/CMakeFiles/bootloader-complete.rule"
+			"file" : "C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/build/CMakeFiles/bootloader-complete.rule"
 		},
 		{
-			"file" : "C:/Users/memor/Desktop/ESP32_Body/blink/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule"
+			"file" : "C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/build/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule"
 		},
 		{
-			"file" : "C:/Users/memor/Desktop/ESP32_Body/blink/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule"
+			"file" : "C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/build/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule"
 		},
 		{
-			"file" : "C:/Users/memor/Desktop/ESP32_Body/blink/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule"
+			"file" : "C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/build/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule"
 		},
 		{
-			"file" : "C:/Users/memor/Desktop/ESP32_Body/blink/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule"
+			"file" : "C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/build/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule"
 		},
 		{
-			"file" : "C:/Users/memor/Desktop/ESP32_Body/blink/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule"
+			"file" : "C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/build/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule"
 		},
 		{
-			"file" : "C:/Users/memor/Desktop/ESP32_Body/blink/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule"
+			"file" : "C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/build/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule"
 		},
 		{
-			"file" : "C:/Users/memor/Desktop/ESP32_Body/blink/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule"
+			"file" : "C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/build/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule"
 		}
 	],
 	"target" : 

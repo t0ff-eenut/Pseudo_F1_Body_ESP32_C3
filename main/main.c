@@ -14,9 +14,10 @@
 ************************************************************************************************************
 */
 
-#include "project_top.h"
+#include "hw_level_handle.h"
 
-int main(){
- 
-    return 0;
+void app_main(){
+    while(1){
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
 }

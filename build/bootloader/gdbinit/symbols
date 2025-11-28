@@ -22,4 +22,4 @@ set confirm off
 set confirm on
 
 # Load application symbols
-file C:/Users/memor/Desktop/ESP32_Body/blink/build/bootloader/bootloader.elf
+file C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/build/bootloader/bootloader.elf
