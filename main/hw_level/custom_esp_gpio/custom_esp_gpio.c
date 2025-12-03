@@ -11,9 +11,9 @@
 ******************************************************************************
 
 ******************************************************************************
-* first update : 2025/10/13
+* first update : 2025/12/03
 ******************************************************************************
-* final update : 2025/11/27
+* final update : 2025/12/03
 ******************************************************************************
 */
 #include "custom_esp_gpio.h"
@@ -25,7 +25,7 @@ static const char *custom_esp_gpio_TAG = "[@]custom_esp_gpio.c";
 
 // GPIO Setting 여부
 static bool b_A_gpio_states[40] = {false,};
-static led_strip_handle_t s_led_strip;
+// static led_strip_handle_t s_led_strip;
 
 bool custom_gpio_init(void){
     #define CUSTOM_GPIO_INIT_DEBUG         GPIO_DEBUG
