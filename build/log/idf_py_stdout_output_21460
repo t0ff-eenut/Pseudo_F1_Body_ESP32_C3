@@ -1,0 +1,26 @@
+Command: cmake -G Ninja -DPYTHON_DEPS_CHECKED=1 -DPYTHON=C:\Users\memor\.espressif\python_env\idf5.5_py3.11_env\Scripts\python.exe -DESP_PLATFORM=1 -DCCACHE_ENABLE=1 C:\Users\memor\Desktop\project\Pseudo_F1_Body_ESP32_C3
+-- Minimal build - ON
+-- ccache will be used for faster recompilation
+-- Building ESP-IDF components for target esp32c3
+NOTICE: Updating lock file at C:\Users\memor\Desktop\project\Pseudo_F1_Body_ESP32_C3\dependencies.lock
+NOTICE: Processing 2 dependencies:
+NOTICE: [1/2] espressif/led_strip (3.0.2)
+NOTICE: [2/2] idf (5.5.0)
+-- Project sdkconfig file C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/sdkconfig
+Loading defaults file C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/sdkconfig.defaults...
+Loading defaults file C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/sdkconfig.defaults.esp32c3...
+C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/sdkconfig:656 CONFIG_GPTIMER_ISR_IRAM_SAFE was replaced with CONFIG_GPTIMER_ISR_CACHE_SAFE 
+C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/sdkconfig:863 CONFIG_PERIPH_CTRL_FUNC_IN_IRAM was replaced with CONFIG_ESP_PERIPH_CTRL_FUNC_IN_IRAM 
+C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/sdkconfig:1020 CONFIG_ESP_SYSTEM_BROWNOUT_INTR was replaced with CONFIG_ESP_BROWNOUT_USE_INTR 
+C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/sdkconfig:1607 CONFIG_NEWLIB_STDOUT_LINE_ENDING_CRLF was replaced with CONFIG_LIBC_STDOUT_LINE_ENDING_CRLF 
+C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/sdkconfig:1608 CONFIG_NEWLIB_STDOUT_LINE_ENDING_LF was replaced with CONFIG_LIBC_STDOUT_LINE_ENDING_LF 
+C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/sdkconfig:1609 CONFIG_NEWLIB_STDOUT_LINE_ENDING_CR was replaced with CONFIG_LIBC_STDOUT_LINE_ENDING_CR 
+C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/sdkconfig:1610 CONFIG_NEWLIB_STDIN_LINE_ENDING_CRLF was replaced with CONFIG_LIBC_STDIN_LINE_ENDING_CRLF 
+C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/sdkconfig:1611 CONFIG_NEWLIB_STDIN_LINE_ENDING_LF was replaced with CONFIG_LIBC_STDIN_LINE_ENDING_LF 
+C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/sdkconfig:1612 CONFIG_NEWLIB_STDIN_LINE_ENDING_CR was replaced with CONFIG_LIBC_STDIN_LINE_ENDING_CR 
+C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/sdkconfig:1613 CONFIG_NEWLIB_NANO_FORMAT was replaced with CONFIG_LIBC_NEWLIB_NANO_FORMAT 
+C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/sdkconfig:1614 CONFIG_NEWLIB_TIME_SYSCALL_USE_RTC_HRT was replaced with CONFIG_LIBC_TIME_SYSCALL_USE_RTC_HRT 
+C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/sdkconfig:1615 CONFIG_NEWLIB_TIME_SYSCALL_USE_RTC was replaced with CONFIG_LIBC_TIME_SYSCALL_USE_RTC 
+C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/sdkconfig:1616 CONFIG_NEWLIB_TIME_SYSCALL_USE_HRT was replaced with CONFIG_LIBC_TIME_SYSCALL_USE_HRT 
+C:/Users/memor/Desktop/project/Pseudo_F1_Body_ESP32_C3/sdkconfig:1617 CONFIG_NEWLIB_TIME_SYSCALL_USE_NONE was replaced with CONFIG_LIBC_TIME_SYSCALL_USE_NONE 
+-- Configuring incomplete, errors occurred!
