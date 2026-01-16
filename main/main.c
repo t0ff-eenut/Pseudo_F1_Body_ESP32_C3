@@ -1,17 +1,15 @@
-/*
-************************************************************************************************************
-* File Name          : main.c
-* Description        : Main program body
-************************************************************************************************************
-* Pseudo F1 RC Car Body Control Unit (BCU) Firmware v1.0.0
-* GPIO -> NVS -> Motor -> Servo -> UART 순으로 INIT 진행
-************************************************************************************************************
-* first update : 2025/11/21
-* final update : 2025/12/04
-************************************************************************************************************
-*/
+/**
+ * @file        main.c
+ * @brief       Pseudo F1 RC Car Body Control Unit (BCU) Firmware v1.0.0
+ * @author      T0T
+ * @date        2025-11-21
+ * @version     1.0.0
+ * 
+ * @details     Pseudo F1 RC Car Body Control Unit (BCU) Firmware Code로써,
+ *              ESP32-C3-MINI + Motor + Servo + UART 구조로 구성됨.
+ */
 
-#include "app_level_top.h"
+#include "app_level_handle.h"         // HAL Level 통합 헤더 사용
 
 typedef enum initial_list_enum {
     INIT_LIST_GPIO,
