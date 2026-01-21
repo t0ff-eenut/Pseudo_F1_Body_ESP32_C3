@@ -12,8 +12,10 @@
 // 명령어 타입 (Command Types)
 typedef enum {
     CMD_HEARTBEAT       = 0x00, // 연결 확인 (Heartbeat)
-    CMD_CONTROL         = 0x01, // 제어 명령 (param1: 속도, param2: 조향)
+    CMD_CONTROL         = 0x01, // 제어 명령 (param1: 속도 -100~100, param2: 조향 -100~100)
     CMD_SET_MODE        = 0x02, // 모드 설정 (param1: 모드)
+    CMD_CONTROL_RAW     = 0x10, // 직접 PWM 제어 (param1: 모터 PWM 상위, param2: 모터 PWM 하위)
+    CMD_SERVO_RAW       = 0x11, // 직접 서보 제어 (param1: 서보 PWM 상위, param2: 서보 PWM 하위)
     CMD_EMERGENCY_STOP  = 0xFF  // 비상 정지
 } rc_cmd_type_t;
 

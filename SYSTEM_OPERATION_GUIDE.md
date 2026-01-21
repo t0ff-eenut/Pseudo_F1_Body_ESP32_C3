@@ -22,6 +22,47 @@ ESP32-C3 Super Mini 기반의 1/10 스케일 F1 RC카 바디 제어 유닛(BCU) 
 - **통신**: UART (115200bps, GPIO 20/21)
 - **시각 피드백**: WS2812 LED 스트립 (GPIO 8)
 
+### GPIO 핀 연결 정보
+
+#### 모터 제어 핀
+```
+전륜 모터 (Front Motor):
+  - IN1: GPIO 6  (PWM 채널 0)
+  - IN2: GPIO 10 (PWM 채널 1)
+
+후륜 모터 (Rear Motor):
+  - IN1: GPIO 4  (PWM 채널 2)
+  - IN2: GPIO 5  (PWM 채널 3)
+```
+
+#### 조향 서보 핀
+```
+서보 모터 (Steering Servo):
+  - PWM: GPIO 7  (PWM 채널 4)
+```
+
+#### 통신 핀
+```
+UART (라즈베리파이 통신):
+  - TXD: GPIO 20 (ESP32 → 라즈베리파이)
+  - RXD: GPIO 21 (라즈베리파이 → ESP32)
+  - 보드레이트: 115200 bps
+  - 데이터 형식: 8N1
+```
+
+#### LED 피드백 핀
+```
+WS2812 LED 스트립:
+  - DATA: GPIO 8
+  - LED 개수: 1개
+```
+
+#### 기타 핀
+```
+NVS 리셋 버튼:
+  - BOOT 버튼: GPIO 9
+```
+
 ### 소프트웨어 아키텍처
 ```
 ┌─────────────────────────────────────────┐
@@ -137,10 +178,32 @@ PARAM1: 스로틀/속도 (-100 ~ 100)
         - 음수: 후진
         - 0: 정지
         - 양수: 전진
+        - 실제 PWM 범위: 0 ~ 1023 (10-bit, 20kHz)
+        - 변환 공식: PWM_Duty = abs(PARAM1) × 1023 / 100
+        
 PARAM2: 조향 각도 (-100 ~ 100)
         - 음수: 좌회전
         - 0: 직진
         - 양수: 우회전
+        - 실제 각도 범위: -90° ~ +90°
+        - 변환 공식: Angle = PARAM2 × 90 / 100
+        - 서보 PWM: 13-bit (0 ~ 8191), 50Hz
+        - 펄스 폭 범위: 500μs ~ 2500μs (중앙 1500μs)
+```
+
+**PWM 상세 정보:**
+```
+모터 PWM 설정:
+  - 해상도: 10-bit (0 ~ 1023)
+  - 주파수: 20kHz (저소음)
+  - 타이머: LEDC_TIMER_0
+  - 모드: LEDC_LOW_SPEED_MODE
+
+서보 PWM 설정:
+  - 해상도: 13-bit (0 ~ 8191)
+  - 주파수: 50Hz (표준 서보)
+  - 타이머: LEDC_TIMER_1
+  - 모드: LEDC_LOW_SPEED_MODE
 ```
 
 **예시 패킷 (전진 50%, 우회전 30도):**
@@ -162,7 +225,61 @@ PARAM2: 예약됨
 동작: 현재 구현되지 않음 (향후 자율/수동 모드 전환 등)
 ```
 
-#### 4. CMD_EMERGENCY_STOP (0xFF) - 비상 정지
+#### 4. CMD_CONTROL_RAW (0x10) - 직접 PWM 제어 (모터)
+```
+용도: 모터의 PWM 값을 직접 제어 (고급 사용자용)
+PARAM1: PWM 상위 바이트 (0~3, 10-bit의 상위 2비트)
+PARAM2: PWM 하위 바이트 (0~255, 10-bit의 하위 8비트)
+동작: 16-bit 값 재구성 → PWM = (PARAM1 << 8) | PARAM2
+      범위: 0 ~ 1023 (10-bit)
+```
+
+**예시 패킷 (PWM 512 설정):**
+```
+PWM 512 = 0x0200
+PARAM1 = 0x02 (상위 바이트)
+PARAM2 = 0x00 (하위 바이트)
+CHECKSUM = 0x10 ^ 0x02 ^ 0x00 = 0x12
+
+전송 데이터: AA 10 02 00 12 55
+```
+
+**PWM 값 계산 예시:**
+```
+PWM 0    (정지)   : PARAM1=0x00, PARAM2=0x00
+PWM 256  (25%)    : PARAM1=0x01, PARAM2=0x00
+PWM 512  (50%)    : PARAM1=0x02, PARAM2=0x00
+PWM 767  (75%)    : PARAM1=0x02, PARAM2=0xFF
+PWM 1023 (100%)   : PARAM1=0x03, PARAM2=0xFF
+```
+
+#### 5. CMD_SERVO_RAW (0x11) - 직접 PWM 제어 (서보)
+```
+용도: 서보의 PWM 값을 직접 제어 (고급 사용자용)
+PARAM1: PWM 상위 바이트 (0~31, 13-bit의 상위 5비트)
+PARAM2: PWM 하위 바이트 (0~255, 13-bit의 하위 8비트)
+동작: 16-bit 값 재구성 → PWM = (PARAM1 << 8) | PARAM2
+      범위: 0 ~ 8191 (13-bit)
+```
+
+**예시 패킷 (중앙 위치, PWM 약 614):**
+```
+중앙 펄스 1500μs → PWM = (1500 * 8192) / 20000 ≈ 614 = 0x0266
+PARAM1 = 0x02 (상위 바이트)
+PARAM2 = 0x66 (하위 바이트)
+CHECKSUM = 0x11 ^ 0x02 ^ 0x66 = 0x75
+
+전송 데이터: AA 11 02 66 75 55
+```
+
+**서보 PWM 값 계산 예시:**
+```
+500μs  (최대 좌회전, -90°) : PWM ≈ 205  = 0x00CD → PARAM1=0x00, PARAM2=0xCD
+1500μs (중앙, 0°)          : PWM ≈ 614  = 0x0266 → PARAM1=0x02, PARAM2=0x66
+2500μs (최대 우회전, +90°) : PWM ≈ 1024 = 0x0400 → PARAM1=0x04, PARAM2=0x00
+```
+
+#### 6. CMD_EMERGENCY_STOP (0xFF) - 비상 정지
 ```
 용도: 즉시 모든 모터 정지
 PARAM1: 사용 안 함
@@ -554,6 +671,73 @@ while True:
 
 라즈베리파이가 100ms마다 전송하므로,
 ESP32는 약 10번의 루프마다 새 명령을 받아 처리
+```
+
+### 시나리오 5: PWM 직접 제어 (고급)
+
+**목표**: 정밀한 PWM 값으로 모터와 서보 제어
+
+```python
+import time
+
+# 모터 PWM 767 (약 75%) 설정
+pwm_value = 767  # 0x02FF
+param1 = (pwm_value >> 8) & 0xFF  # 0x02
+param2 = pwm_value & 0xFF          # 0xFF
+
+packet = create_packet(0x10, param1, param2)
+ser.write(packet)  # 전송: AA 10 02 FF ED 55
+
+time.sleep(2)
+
+# 서보 중앙 위치 (1500μs)
+# PWM = (1500 * 8192) / 20000 ≈ 614 = 0x0266
+servo_pwm = 614
+param1 = (servo_pwm >> 8) & 0xFF  # 0x02
+param2 = servo_pwm & 0xFF          # 0x66
+
+packet = create_packet(0x11, param1, param2)
+ser.write(packet)  # 전송: AA 11 02 66 75 55
+```
+
+**ESP32 동작:**
+```
+[수신] AA 10 02 FF ED 55
+  │
+  ├─ CMD_CONTROL_RAW 처리
+  │   ├─ PWM 재구성: (0x02 << 8) | 0xFF = 767
+  │   ├─ 범위 확인: 767 ≤ 1023 ✓
+  │   ├─ 속도 변환: (767 * 100) / 1023 = 75
+  │   └─ 모터 설정: 75% 전진
+  │
+  └─ [결과] 정밀한 PWM 제어 완료
+
+[수신] AA 11 02 66 75 55
+  │
+  ├─ CMD_SERVO_RAW 처리
+  │   ├─ PWM 재구성: (0x02 << 8) | 0x66 = 614
+  │   ├─ 펄스 폭 계산: (614 * 20000) / 8192 ≈ 1500μs
+  │   ├─ 각도 변환: (1500 - 1500) * 90 / 1000 = 0°
+  │   └─ 서보 설정: 중앙 위치
+  │
+  └─ [결과] 정밀한 서보 제어 완료
+```
+
+**사용 예시 (Python 클래스):**
+```python
+# rpi_pwm_control_example.py 참조
+from rpi_pwm_control_example import RCCarController
+
+car = RCCarController()
+
+# 퍼센테이지 제어 (권장)
+car.control_percentage(speed=70, steering=30)
+
+# PWM 직접 제어 (고급)
+car.control_motor_pwm(716)      # 모터 PWM 716 (약 70%)
+car.control_servo_angle(45)     # 서보 45도 우회전
+
+car.close()
 ```
 
 ---

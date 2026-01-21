@@ -82,6 +82,9 @@
 // #define UART_USE    true
 #define UART_USE false
 
+// 모터 테스트 모드 (true: 테스트, false: 일반 UART 제어)
+#define MOTOR_TEST true
+
 // #define SENSOR      0
 // #define SWITCH      1
 // #define MODE        SENSOR

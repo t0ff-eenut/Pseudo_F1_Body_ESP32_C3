@@ -34,9 +34,37 @@
 패킷 구조 (6 바이트):
 `[STX(0xAA)] [CMD] [PARAM1] [PARAM2] [CHECKSUM] [ETX(0x55)]`
 
-*   **CMD 0x01 (제어 명령)**:
+### 지원 명령어
+*   **CMD 0x01 (퍼센테이지 제어)** - 권장 방식:
     *   Param1: 스로틀/속도 (-100 ~ 100)
-    *   Param2: 조향 각도 (-100 ~ 100 또는 각도)
+    *   Param2: 조향 각도 (-100 ~ 100)
+    
+*   **CMD 0x10 (모터 PWM 직접 제어)** - 고급 사용자용:
+    *   Param1: PWM 상위 바이트 (0~3)
+    *   Param2: PWM 하위 바이트 (0~255)
+    *   범위: 0 ~ 1023 (10-bit)
+    
+*   **CMD 0x11 (서보 PWM 직접 제어)** - 고급 사용자용:
+    *   Param1: PWM 상위 바이트 (0~31)
+    *   Param2: PWM 하위 바이트 (0~255)
+    *   범위: 0 ~ 8191 (13-bit)
+    
+*   **CMD 0xFF (비상 정지)**:
+    *   모든 모터 즉시 정지
+
+### 사용 예시
+```python
+# 퍼센테이지 제어 (권장)
+from rpi_pwm_control_example import RCCarController
+car = RCCarController()
+car.control_percentage(speed=70, steering=30)
+
+# PWM 직접 제어 (고급)
+car.control_motor_pwm(716)      # 모터 PWM 716 (약 70%)
+car.control_servo_angle(45)     # 서보 45도 우회전
+```
+
+상세한 사용법은 `SYSTEM_OPERATION_GUIDE.md` 및 `rpi_pwm_control_example.py`를 참조하세요.
 
 ---
 

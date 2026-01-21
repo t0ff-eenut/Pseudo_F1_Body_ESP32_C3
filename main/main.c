@@ -9,7 +9,7 @@
  *              ESP32-C3-MINI + Motor + Servo + UART 구조로 구성됨.
  */
 
-#include "app_level_handle.h"         // HAL Level 통합 헤더 사용
+#include "app_level_top.h"            // Application Level 통합 헤더
 
 typedef enum initial_list_enum {
     INIT_LIST_GPIO,
@@ -43,12 +43,50 @@ void app_main(void) {
     // LED Strip - Green for ready
     custom_gpio_set_led_strip_color(0, 50, 0);
 
-    // Main loop
+#if MOTOR_TEST
+    // ========== 모터 테스트 모드 ==========
+    printf(COLOR_YELLOW"[TEST MODE] Motor Test Started\n"COLOR_RESET);
+    printf("Speed: 50%%, Interval: 2s\n\n");
+    
+    while (1) {
+        // 전륜 전진
+        printf("Front: FORWARD\n");
+        custom_motor_set_front(100);
+        vTaskDelay(pdMS_TO_TICKS(2000));
+
+        // 전륜 후진
+        printf("Front: BACKWARD\n");
+        custom_motor_set_front(-100);
+        vTaskDelay(pdMS_TO_TICKS(2000));
+
+        // 전륜 정지
+        printf("Front: STOP\n\n");
+        custom_motor_set_front(0);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+
+        // 후륜 전진
+        printf("Rear: FORWARD\n");
+        custom_motor_set_rear(100);
+        vTaskDelay(pdMS_TO_TICKS(2000));
+
+        // 후륜 후진
+        printf("Rear: BACKWARD\n");
+        custom_motor_set_rear(-100);
+        vTaskDelay(pdMS_TO_TICKS(2000));
+
+        // 후륜 정지
+        printf("Rear: STOP\n\n");
+        custom_motor_set_rear(0);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+#else
+    // ========== 일반 제어 모드 ==========
     printf("[INFO] Entering main control loop...\n");
     while (1) {
         rccar_control_task();
         vTaskDelay(pdMS_TO_TICKS(10)); // 10ms cycle
     }
+#endif
 }
 
 static bool initial(void) {
