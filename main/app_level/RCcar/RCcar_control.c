@@ -5,17 +5,17 @@ static const char *TAG = "[@]RCcar_control";
 
 bool rccar_control_init(void) {
     #if CONTROL_DEBUG
-    printf("[%s] [Start] rccar_control_init()\n", custom_getRuntimeString());
+    printf("[%s] [시작] rccar_control_init()\n", custom_getRuntimeString());
     #endif
 
     rccar_protocol_init();
 
-    // Ensure motors are stopped
+    // 모터 정지 및 서보 중앙 정렬 확인
     custom_motor_stop_all();
     custom_servo_center();
 
     #if CONTROL_DEBUG
-    printf("[%s] [Done] rccar_control_init()\n", custom_getRuntimeString());
+    printf("[%s] [완료] rccar_control_init()\n", custom_getRuntimeString());
     #endif
     return true;
 }
@@ -23,17 +23,17 @@ bool rccar_control_init(void) {
 void rccar_control_process_byte(uint8_t byte) {
     rc_packet_t packet;
     if (rccar_protocol_parse_byte(byte, &packet)) {
-        // Valid packet received
+        // 유효한 패킷 수신됨
         switch (packet.cmd) {
             case CMD_CONTROL:
-                // Param1: Speed (Throttle)
-                // Param2: Angle (Steering)
+                // Param1: 속도 (Throttle)
+                // Param2: 각도 (Steering)
                 custom_motor_set_both(packet.param1, packet.param1);
                 custom_servo_set_angle(packet.param2);
                 break;
 
             case CMD_SET_MODE:
-                // Handle mode change if implemented
+                // 모드 변경 구현 시 사용
                 break;
 
             case CMD_EMERGENCY_STOP:
@@ -41,7 +41,7 @@ void rccar_control_process_byte(uint8_t byte) {
                 break;
 
             case CMD_HEARTBEAT:
-                // Reset watchdog if implemented
+                // 워치독 리셋 등 구현 시 사용
                 break;
 
             default:
@@ -51,7 +51,7 @@ void rccar_control_process_byte(uint8_t byte) {
 }
 
 void rccar_control_task(void) {
-    // Process all available bytes in the UART buffer
+    // UART 버퍼의 모든 바이트를 처리
     uint8_t data;
     while (custom_uart_read_byte(&data)) {
         rccar_control_process_byte(data);

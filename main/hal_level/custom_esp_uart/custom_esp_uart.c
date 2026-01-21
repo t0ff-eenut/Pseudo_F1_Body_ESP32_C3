@@ -1,7 +1,7 @@
 /*
 ******************************************************************************
 * File Name          : custom_esp_uart.c
-* Description        : UART Communication Module
+* Description        : UART 통신 모듈
 ******************************************************************************
 */
 
@@ -17,7 +17,7 @@ static QueueHandle_t uart_queue;
 
 bool custom_uart_init(void) {
     #if UART_DEBUG
-    printf("[%s] [Start] custom_uart_init()\n", custom_getRuntimeString());
+    printf("[%s] [시작] custom_uart_init()\n", custom_getRuntimeString());
     #endif
 
     uart_config_t uart_config = {
@@ -29,9 +29,7 @@ bool custom_uart_init(void) {
         .source_clk = UART_SCLK_DEFAULT,
     };
     
-    // Install UART driver, and get the queue.
-    // Event queue size = 10 (or whatever), we might process events or just poll.
-    // Here we use a larger buffer for RX.
+    // UART 드라이버 설치 및 큐 핸들 획득
     esp_err_t err = uart_driver_install(OUTPUT_UART_PORT, UART_BUF_SIZE * 2, UART_BUF_SIZE * 2, 20, &uart_queue, 0);
     if (err != ESP_OK) return false;
 
@@ -42,7 +40,7 @@ bool custom_uart_init(void) {
     if (err != ESP_OK) return false;
 
     #if UART_DEBUG
-    printf("[%s] [Done] custom_uart_init()\n", custom_getRuntimeString());
+    printf("[%s] [완료] custom_uart_init()\n", custom_getRuntimeString());
     #endif
     return true;
 }
@@ -53,7 +51,7 @@ bool custom_uart_deinit(void) {
 }
 
 bool custom_uart_read_byte(uint8_t *out_byte) {
-    // Non-blocking read of 1 byte
+    // 1바이트 비동기 읽기
     int len = uart_read_bytes(OUTPUT_UART_PORT, out_byte, 1, 0);
     return (len > 0);
 }

@@ -4,31 +4,30 @@
 #include "hal_level_handle.h"
 
 /**
- * @brief Initialize Servo Module
- * @return true if success
+ * @brief 서보 모듈 초기화
+ * @return 성공 시 true
  */
 bool custom_servo_init(void);
 
 /**
- * @brief Set Servo Angle
- * @param angle Angle in degrees (-45 to 45 or -90 to 90 depending on mechanism)
- *              Assuming -90 (Left) to +90 (Right), 0 (Center)
+ * @brief 서보 각도 설정
+ * @param angle 각도 (-90 ~ 90), 0은 중앙
  */
 void custom_servo_set_angle(int16_t angle);
 
 /**
- * @brief Get Current Servo Angle
- * @return Current angle
+ * @brief 현재 서보 각도 가져오기
+ * @return 현재 각도
  */
 int16_t custom_servo_get_angle(void);
 
 /**
- * @brief Center the servo
+ * @brief 서보 중앙 정렬
  */
 void custom_servo_center(void);
 
 /**
- * @brief Deinitialize Servo Module
+ * @brief 서보 모듈 해제
  */
 bool custom_servo_deinit(void);
 

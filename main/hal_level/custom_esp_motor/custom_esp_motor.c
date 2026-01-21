@@ -1,14 +1,14 @@
 /*
 ******************************************************************************
 * File Name          : custom_esp_motor.c
-* Description        : DC Motor Control Module
+* Description        : DC 모터 제어 모듈
 ******************************************************************************
-* Controls 2 DC Motors (Front and Rear) using 2 pins each.
-* Logic:
-*  Forward: IN1 = PWM, IN2 = LOW
-*  Reverse: IN1 = LOW, IN2 = PWM
-*  Stop:    IN1 = LOW, IN2 = LOW
-*  Brake:   IN1 = HIGH, IN2 = HIGH (Not used in this impl yet)
+* 2개의 DC 모터(전륜, 후륜)를 각각 2개의 핀으로 제어합니다.
+* 로직:
+*  전진: IN1 = PWM, IN2 = LOW
+*  후진: IN1 = LOW, IN2 = PWM
+*  정지: IN1 = LOW, IN2 = LOW
+*  브레이크: IN1 = HIGH, IN2 = HIGH (현재 미구현)
 ******************************************************************************
 */
 
@@ -27,7 +27,7 @@ static mss s_motor_state = {
 static uint32_t speed_to_duty(int8_t speed) {
     if (speed < 0) speed = -speed;
     if (speed > 100) speed = 100;
-    // Map 0-100 to 0-1023
+    // 0-100 범위를 0-1023으로 매핑
     return (uint32_t)(speed * 1023 / 100);
 }
 
@@ -38,7 +38,7 @@ static void config_pwm_channel(int gpio_num, ledc_channel_t channel) {
         .timer_sel      = MOTOR_PWM_TIMER,
         .intr_type      = LEDC_INTR_DISABLE,
         .gpio_num       = gpio_num,
-        .duty           = 0, // Set duty to 0%
+        .duty           = 0, // 초기 듀티 0%
         .hpoint         = 0
     };
     ledc_channel_config(&ledc_channel);
@@ -46,10 +46,10 @@ static void config_pwm_channel(int gpio_num, ledc_channel_t channel) {
 
 bool custom_motor_init(void) {
     #if MOTOR_DEBUG
-    printf("[%s] [Start] custom_motor_init()\n", custom_getRuntimeString());
+    printf("[%s] [시작] custom_motor_init()\n", custom_getRuntimeString());
     #endif
 
-    // Configure Timer
+    // 타이머 설정
     ledc_timer_config_t ledc_timer = {
         .speed_mode       = MOTOR_PWM_MODE,
         .timer_num        = MOTOR_PWM_TIMER,
@@ -59,7 +59,7 @@ bool custom_motor_init(void) {
     };
     ledc_timer_config(&ledc_timer);
 
-    // Configure Channels
+    // 채널 설정
     config_pwm_channel(MOTOR_FRONT_IN1_GPIO_NUM, MOTOR_FRONT_IN1_CHANNEL);
     config_pwm_channel(MOTOR_FRONT_IN2_GPIO_NUM, MOTOR_FRONT_IN2_CHANNEL);
     config_pwm_channel(MOTOR_REAR_IN1_GPIO_NUM, MOTOR_REAR_IN1_CHANNEL);
@@ -68,7 +68,7 @@ bool custom_motor_init(void) {
     custom_motor_stop_all();
 
     #if MOTOR_DEBUG
-    printf("[%s] [Done] custom_motor_init()\n", custom_getRuntimeString());
+    printf("[%s] [완료] custom_motor_init()\n", custom_getRuntimeString());
     #endif
     return true;
 }
@@ -77,19 +77,19 @@ static void set_motor_pwm(ledc_channel_t ch_in1, ledc_channel_t ch_in2, int8_t s
     uint32_t duty = speed_to_duty(speed);
     
     if (speed > 0) {
-        // Forward: IN1=PWM, IN2=0
+        // 전진: IN1=PWM, IN2=0
         ledc_set_duty(MOTOR_PWM_MODE, ch_in1, duty);
         ledc_update_duty(MOTOR_PWM_MODE, ch_in1);
         ledc_set_duty(MOTOR_PWM_MODE, ch_in2, 0);
         ledc_update_duty(MOTOR_PWM_MODE, ch_in2);
     } else if (speed < 0) {
-        // Reverse: IN1=0, IN2=PWM
+        // 후진: IN1=0, IN2=PWM
         ledc_set_duty(MOTOR_PWM_MODE, ch_in1, 0);
         ledc_update_duty(MOTOR_PWM_MODE, ch_in1);
         ledc_set_duty(MOTOR_PWM_MODE, ch_in2, duty);
         ledc_update_duty(MOTOR_PWM_MODE, ch_in2);
     } else {
-        // Stop: IN1=0, IN2=0
+        // 정지: IN1=0, IN2=0
         ledc_set_duty(MOTOR_PWM_MODE, ch_in1, 0);
         ledc_update_duty(MOTOR_PWM_MODE, ch_in1);
         ledc_set_duty(MOTOR_PWM_MODE, ch_in2, 0);

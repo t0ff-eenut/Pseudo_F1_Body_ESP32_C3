@@ -1,13 +1,13 @@
 #include "RCcar_protocol.h"
 
-// Parsing state machine
+// 파싱 상태 머신 (Parsing State Machine)
 typedef enum {
-    STATE_WAIT_STX,
-    STATE_WAIT_CMD,
-    STATE_WAIT_P1,
-    STATE_WAIT_P2,
-    STATE_WAIT_CS,
-    STATE_WAIT_ETX
+    STATE_WAIT_STX,     // STX 대기
+    STATE_WAIT_CMD,     // 명령어 대기
+    STATE_WAIT_P1,      // 파라미터 1 대기
+    STATE_WAIT_P2,      // 파라미터 2 대기
+    STATE_WAIT_CS,      // 체크섬 대기
+    STATE_WAIT_ETX      // ETX 대기
 } parse_state_t;
 
 static parse_state_t current_state = STATE_WAIT_STX;
@@ -52,14 +52,14 @@ bool rccar_protocol_parse_byte(uint8_t byte, rc_packet_t *out_packet) {
             if (byte == PROTOCOL_ETX) {
                 temp_packet.etx = byte;
 
-                // Verify checksum
+                // 체크섬 검증
                 uint8_t calculated_cs = temp_packet.cmd ^ (uint8_t)temp_packet.param1 ^ (uint8_t)temp_packet.param2;
                 if (calculated_cs == temp_packet.checksum) {
                     *out_packet = temp_packet;
                     packet_ready = true;
                 }
             }
-            // Reset state regardless of success/fail, or after success
+            // 성공/실패 여부와 관계없이, 또는 성공 후 상태 초기화
             current_state = STATE_WAIT_STX;
             break;
 

@@ -1,9 +1,9 @@
 /*
 ******************************************************************************
 * File Name          : custom_esp_servo.c
-* Description        : Servo Motor Control Module
+* Description        : 서보 모터 제어 모듈
 ******************************************************************************
-* Servo PWM using ESP32 LEDC
+* ESP32 LEDC를 이용한 서보 PWM 제어
 ******************************************************************************
 */
 
@@ -15,14 +15,12 @@ static const char *custom_esp_servo_TAG = "[@]custom_esp_servo.c";
 static int16_t s_current_angle = 0;
 
 static uint32_t angle_to_duty(int16_t angle) {
-    // Clamp angle to -90 ~ +90
+    // 각도 제한 (-90 ~ +90)
     if (angle < -90) angle = -90;
     if (angle > 90) angle = 90;
     
-    // Map -90..+90 to MinPulse..MaxPulse
-    // Formula: Pulse = Center + (Angle/90) * (Max - Center)
-    // Actually safer to map linear:
-    // -90 -> Min, +90 -> Max
+    // -90..+90 범위를 MinPulse..MaxPulse로 매핑
+    // 공식: Pulse = Center + (Angle/90) * (Max - Center)
     
     int32_t pulse_us = SERVO_CENTER_PULSE_US + (angle * (SERVO_MAX_PULSE_US - SERVO_MIN_PULSE_US) / 180);
 
@@ -36,10 +34,9 @@ static uint32_t angle_to_duty(int16_t angle) {
 
 bool custom_servo_init(void) {
     #if SERVO_DEBUG
-    printf("[%s] [Start] custom_servo_init()\n", custom_getRuntimeString());
+    printf("[%s] [시작] custom_servo_init()\n", custom_getRuntimeString());
     #endif
     
-    // Timer is likely already configured by Motor if they share, but here Servo uses Timer 1.
     ledc_timer_config_t ledc_timer = {
         .speed_mode       = SERVO_PWM_MODE,
         .timer_num        = SERVO_PWM_TIMER,
@@ -63,7 +60,7 @@ bool custom_servo_init(void) {
     s_current_angle = 0;
     
     #if SERVO_DEBUG
-    printf("[%s] [Done] custom_servo_init()\n", custom_getRuntimeString());
+    printf("[%s] [완료] custom_servo_init()\n", custom_getRuntimeString());
     #endif
     return true;
 }

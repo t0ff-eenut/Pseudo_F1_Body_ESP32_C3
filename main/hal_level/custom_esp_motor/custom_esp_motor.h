@@ -5,62 +5,62 @@
 
 /*
 ******************************************************************************
-* DC Motor Control Module Header
+* DC 모터 제어 모듈 헤더
 ******************************************************************************
-* Supports 2 DC Motors (Front and Rear)
-* Each motor controlled by 2 pins (IN1, IN2)
+* 2개의 DC 모터(전륜/후륜) 지원
+* 각 모터는 2개의 핀(IN1, IN2)으로 제어됨
 ******************************************************************************
 */
 
 typedef enum {
-    MOTOR_STOP = 0,
-    MOTOR_FORWARD,
-    MOTOR_BACKWARD,
-    MOTOR_BRAKE
-} mde; // Motor Direction Enum
+    MOTOR_STOP = 0,     // 정지
+    MOTOR_FORWARD,      // 전진
+    MOTOR_BACKWARD,     // 후진
+    MOTOR_BRAKE         // 브레이크
+} mde; // 모터 방향 열거형 (Motor Direction Enum)
 
 typedef struct {
-    int8_t speed_front; // -100 to 100
-    int8_t speed_rear;  // -100 to 100
+    int8_t speed_front; // -100 ~ 100
+    int8_t speed_rear;  // -100 ~ 100
     mde dir_front;
     mde dir_rear;
-} mss; // Motor State Struct
+} mss; // 모터 상태 구조체 (Motor State Struct)
 
 /**
- * @brief Initialize Motor Module
- * @return true if success
+ * @brief 모터 모듈 초기화
+ * @return 성공 시 true
  */
 bool custom_motor_init(void);
 
 /**
- * @brief Set Front Motor Speed
- * @param speed -100 (Full Reverse) to 100 (Full Forward)
+ * @brief 전륜 모터 속도 설정
+ * @param speed -100 (최대 후진) ~ 100 (최대 전진)
  */
 void custom_motor_set_front(int8_t speed);
 
 /**
- * @brief Set Rear Motor Speed
- * @param speed -100 (Full Reverse) to 100 (Full Forward)
+ * @brief 후륜 모터 속도 설정
+ * @param speed -100 (최대 후진) ~ 100 (최대 전진)
  */
 void custom_motor_set_rear(int8_t speed);
 
 /**
- * @brief Set Both Motors Speed
+ * @brief 양쪽 모터 속도 설정
  */
 void custom_motor_set_both(int8_t front_speed, int8_t rear_speed);
 
 /**
- * @brief Stop All Motors (Coast)
+ * @brief 모든 모터 정지 (Coast)
  */
 void custom_motor_stop_all(void);
 
 /**
- * @brief Get Current Motor State
+ * @brief 현재 모터 상태 가져오기
  */
 mss custom_motor_get_state(void);
 
 /**
- * @brief Deinitialize Motor Module
+ * @brief 모터 모듈 해제
  */
 bool custom_motor_deinit(void);
 
