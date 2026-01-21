@@ -1,145 +1,81 @@
-/*
-******************************************************************************
-* File Name          : RCcar_protocol.c
-* Description        : RC Car Communication Protocol Implementation
-******************************************************************************
-* Packet parsing and command processing for Raspberry Pi communication
-******************************************************************************
-* first update : 2025/12/04
-******************************************************************************
-*/
-
 #include "RCcar_protocol.h"
 
-#define PROTOCOL_DEBUG  DEBUG
-static const char *RCcar_protocol_TAG = "[@]RCcar_protocol.c";
+// 파싱 상태 머신 (Parsing State Machine)
+typedef enum {
+    STATE_WAIT_STX,     // STX 대기
+    STATE_WAIT_CMD,     // 명령어 대기
+    STATE_WAIT_P1,      // 파라미터 1 대기
+    STATE_WAIT_P2,      // 파라미터 2 대기
+    STATE_WAIT_CS,      // 체크섬 대기
+    STATE_WAIT_ETX      // ETX 대기
+} parse_state_t;
 
-uint8_t protocol_calc_checksum(const uint8_t* p_data, uint16_t ui16_len) {
-    uint8_t checksum = 0;
-    for (uint16_t i = 0; i < ui16_len; i++) {
-        checksum ^= p_data[i];
-    }
-    return checksum;
+static parse_state_t current_state = STATE_WAIT_STX;
+static rc_packet_t temp_packet;
+
+void rccar_protocol_init(void) {
+    current_state = STATE_WAIT_STX;
 }
 
-bool protocol_parse_packet(const uint8_t* p_data, uint16_t ui16_len, cps* p_packet) {
-    if (p_data == NULL || p_packet == NULL) {
-        return false;
-    }
+bool rccar_protocol_parse_byte(uint8_t byte, rc_packet_t *out_packet) {
+    bool packet_ready = false;
 
-    if (ui16_len < PROTOCOL_PACKET_SIZE) {
-        #if PROTOCOL_DEBUG
-        printf("[%s] "COLOR_YELLOW"[Warn]\t %s Packet too short: %d bytes\n" COLOR_RESET, 
-               custom_getRuntimeString(), RCcar_protocol_TAG, ui16_len);
-        #endif
-        return false;
-    }
-
-    // Check header
-    if (p_data[0] != PROTOCOL_HEADER) {
-        #if PROTOCOL_DEBUG
-        printf("[%s] "COLOR_YELLOW"[Warn]\t %s Invalid header: 0x%02X\n" COLOR_RESET, 
-               custom_getRuntimeString(), RCcar_protocol_TAG, p_data[0]);
-        #endif
-        return false;
-    }
-
-    // Verify checksum
-    uint8_t calc_checksum = protocol_calc_checksum(p_data, PROTOCOL_PACKET_SIZE - 1);
-    if (calc_checksum != p_data[PROTOCOL_PACKET_SIZE - 1]) {
-        #if PROTOCOL_DEBUG
-        printf("[%s] "COLOR_RED"[Error]\t %s Checksum mismatch: calc=0x%02X, recv=0x%02X\n" COLOR_RESET, 
-               custom_getRuntimeString(), RCcar_protocol_TAG, calc_checksum, p_data[PROTOCOL_PACKET_SIZE - 1]);
-        #endif
-        return false;
-    }
-
-    // Parse packet
-    p_packet->ui8_header = p_data[0];
-    p_packet->ui8_cmd_type = p_data[1];
-    p_packet->i8_throttle = (int8_t)p_data[2];
-    p_packet->i8_steering = (int8_t)p_data[3];
-    p_packet->ui8_checksum = p_data[4];
-
-    #if PROTOCOL_DEBUG
-    printf("[%s] "COLOR_GREEN"[RX]\t %s Packet: CMD=0x%02X THR=%d STR=%d\n" COLOR_RESET, 
-           custom_getRuntimeString(), RCcar_protocol_TAG, 
-           p_packet->ui8_cmd_type, p_packet->i8_throttle, p_packet->i8_steering);
-    #endif
-
-    return true;
-}
-
-void protocol_build_status_response(sps* p_packet) {
-    if (p_packet == NULL) return;
-
-    mss motor_state = custom_motor_get_state();
-    int16_t servo_angle = custom_servo_get_angle();
-
-    p_packet->ui8_header = PROTOCOL_HEADER;
-    p_packet->ui8_cmd_type = CMD_STATUS_RESP;
-    p_packet->i8_motor_left = motor_state.i8_speed_left;
-    p_packet->i8_motor_right = motor_state.i8_speed_right;
-    p_packet->i8_servo_angle = (int8_t)servo_angle;
-    
-    // Calculate checksum (excluding checksum byte itself)
-    uint8_t* p_data = (uint8_t*)p_packet;
-    p_packet->ui8_checksum = protocol_calc_checksum(p_data, sizeof(sps) - 1);
-}
-
-bool protocol_send_status(void) {
-    sps status_packet;
-    protocol_build_status_response(&status_packet);
-
-    int bytes_sent = custom_uart_send((uint8_t*)&status_packet, sizeof(sps));
-    
-    #if PROTOCOL_DEBUG
-    printf("[%s] "COLOR_GREEN"[TX]\t %s Status: L=%d R=%d S=%d\n" COLOR_RESET,
-           custom_getRuntimeString(), RCcar_protocol_TAG,
-           status_packet.i8_motor_left, status_packet.i8_motor_right, status_packet.i8_servo_angle);
-    #endif
-
-    return (bytes_sent == sizeof(sps));
-}
-
-void protocol_process_command(const cps* p_packet) {
-    if (p_packet == NULL) return;
-
-    #if PROTOCOL_DEBUG
-    printf("[%s] "COLOR_WHITE"[CMD]\t %s Processing command: 0x%02X\n" COLOR_RESET,
-           custom_getRuntimeString(), RCcar_protocol_TAG, p_packet->ui8_cmd_type);
-    #endif
-
-    switch (p_packet->ui8_cmd_type) {
-        case CMD_MANUAL_CONTROL:
-        case CMD_AUTO_CONTROL:
-            // Apply throttle to motors
-            custom_motor_set_both(p_packet->i8_throttle, p_packet->i8_throttle);
-            // Apply steering to servo
-            custom_servo_set_angle(p_packet->i8_steering);
+    switch (current_state) {
+        case STATE_WAIT_STX:
+            if (byte == PROTOCOL_STX) {
+                temp_packet.stx = byte;
+                current_state = STATE_WAIT_CMD;
+            }
             break;
 
-        case CMD_STOP:
-            // Emergency stop
-            custom_motor_brake();
-            custom_servo_center();
-            custom_gpio_set_led_strip_color(255, 0, 0);  // Red for emergency
-            #if PROTOCOL_DEBUG
-            printf("[%s] "COLOR_RED"[STOP]\t %s Emergency stop activated!\n" COLOR_RESET,
-                   custom_getRuntimeString(), RCcar_protocol_TAG);
-            #endif
+        case STATE_WAIT_CMD:
+            temp_packet.cmd = byte;
+            current_state = STATE_WAIT_P1;
             break;
 
-        case CMD_STATUS_REQ:
-            // Send status response
-            protocol_send_status();
+        case STATE_WAIT_P1:
+            temp_packet.param1 = (int8_t)byte;
+            current_state = STATE_WAIT_P2;
+            break;
+
+        case STATE_WAIT_P2:
+            temp_packet.param2 = (int8_t)byte;
+            current_state = STATE_WAIT_CS;
+            break;
+
+        case STATE_WAIT_CS:
+            temp_packet.checksum = byte;
+            current_state = STATE_WAIT_ETX;
+            break;
+
+        case STATE_WAIT_ETX:
+            if (byte == PROTOCOL_ETX) {
+                temp_packet.etx = byte;
+
+                // 체크섬 검증
+                uint8_t calculated_cs = temp_packet.cmd ^ (uint8_t)temp_packet.param1 ^ (uint8_t)temp_packet.param2;
+                if (calculated_cs == temp_packet.checksum) {
+                    *out_packet = temp_packet;
+                    packet_ready = true;
+                }
+            }
+            // 성공/실패 여부와 관계없이, 또는 성공 후 상태 초기화
+            current_state = STATE_WAIT_STX;
             break;
 
         default:
-            #if PROTOCOL_DEBUG
-            printf("[%s] "COLOR_YELLOW"[Warn]\t %s Unknown command: 0x%02X\n" COLOR_RESET,
-                   custom_getRuntimeString(), RCcar_protocol_TAG, p_packet->ui8_cmd_type);
-            #endif
+            current_state = STATE_WAIT_STX;
             break;
     }
+
+    return packet_ready;
+}
+
+void rccar_protocol_create_packet(rc_cmd_type_t cmd, int8_t p1, int8_t p2, rc_packet_t *out_packet) {
+    out_packet->stx = PROTOCOL_STX;
+    out_packet->cmd = (uint8_t)cmd;
+    out_packet->param1 = p1;
+    out_packet->param2 = p2;
+    out_packet->checksum = (uint8_t)cmd ^ (uint8_t)p1 ^ (uint8_t)p2;
+    out_packet->etx = PROTOCOL_ETX;
 }

@@ -1,90 +1,59 @@
-/*
-******************************************************************************
-* File Name          : RCcar_control.c
-* Description        : RC Car Main Control Logic Implementation
-******************************************************************************
-* Handles UART input, updates mode, controls motors/servo
-******************************************************************************
-* first update : 2025/12/04
-******************************************************************************
-*/
-
 #include "RCcar_control.h"
 
-#define CONTROL_DEBUG  DEBUG
-static const char *RCcar_control_TAG = "[@]RCcar_control.c";
-
-static uint8_t s_rx_buffer[UART_BUF_SIZE];
+#define CONTROL_DEBUG DEBUG
+static const char *TAG = "[@]RCcar_control";
 
 bool rccar_control_init(void) {
     #if CONTROL_DEBUG
-    printf("[%s] "COLOR_WHITE"[Start]\t %s rccar_control_init()\n" COLOR_RESET, custom_getRuntimeString(), RCcar_control_TAG);
+    printf("[%s] [시작] rccar_control_init()\n", custom_getRuntimeString());
     #endif
 
-    bool b_success = true;
-    b_success &= rccar_mode_init();
+    rccar_protocol_init();
+
+    // 모터 정지 및 서보 중앙 정렬 확인
+    custom_motor_stop_all();
+    custom_servo_center();
 
     #if CONTROL_DEBUG
-    printf("[%s] "COLOR_GREEN"[Done]\t %s Control logic initialized\n" COLOR_RESET, custom_getRuntimeString(), RCcar_control_TAG);
+    printf("[%s] [완료] rccar_control_init()\n", custom_getRuntimeString());
     #endif
-
-    return b_success;
+    return true;
 }
 
-void rccar_control_process_uart(void) {
-    // Read UART data
-    int len = custom_uart_read(s_rx_buffer, PROTOCOL_PACKET_SIZE, 10); // Short timeout for non-blocking feel
-    
-    if (len > 0) {
-        cps packet;
-        if (protocol_parse_packet(s_rx_buffer, len, &packet)) {
-            
-            // Handle Mode Switching based on Command
-            switch (packet.ui8_cmd_type) {
-                case CMD_MANUAL_CONTROL:
-                    rccar_mode_set(MODE_MANUAL);
-                    break;
-                case CMD_AUTO_CONTROL:
-                    rccar_mode_set(MODE_AUTO);
-                    break;
-                case CMD_STOP:
-                    rccar_mode_set(MODE_IDLE); // Or stay in current mode but stop? Let's go IDLE for safety
-                    break;
-                case CMD_STATUS_REQ:
-                    // Status request doesn't change mode
-                    break;
-                default:
-                    break;
-            }
+void rccar_control_process_byte(uint8_t byte) {
+    rc_packet_t packet;
+    if (rccar_protocol_parse_byte(byte, &packet)) {
+        // 유효한 패킷 수신됨
+        switch (packet.cmd) {
+            case CMD_CONTROL:
+                // Param1: 속도 (Throttle)
+                // Param2: 각도 (Steering)
+                custom_motor_set_both(packet.param1, packet.param1);
+                custom_servo_set_angle(packet.param2);
+                break;
 
-            // Execute Command if allowed in current mode
-            rme current_mode = rccar_mode_get();
-            
-            if (current_mode == MODE_MANUAL && packet.ui8_cmd_type == CMD_MANUAL_CONTROL) {
-                protocol_process_command(&packet);
-            }
-            else if (current_mode == MODE_AUTO && packet.ui8_cmd_type == CMD_AUTO_CONTROL) {
-                protocol_process_command(&packet);
-            }
-            else if (packet.ui8_cmd_type == CMD_STOP) {
-                // Always allow STOP
-                protocol_process_command(&packet);
-            }
-            else if (packet.ui8_cmd_type == CMD_STATUS_REQ) {
-                // Always allow Status Request
-                protocol_process_command(&packet);
-            }
+            case CMD_SET_MODE:
+                // 모드 변경 구현 시 사용
+                break;
+
+            case CMD_EMERGENCY_STOP:
+                custom_motor_stop_all();
+                break;
+
+            case CMD_HEARTBEAT:
+                // 워치독 리셋 등 구현 시 사용
+                break;
+
+            default:
+                break;
         }
     }
 }
 
 void rccar_control_task(void) {
-    // 1. Process UART Input
-    rccar_control_process_uart();
-
-    // 2. Mode specific background tasks
-    rccar_mode_task();
-
-    // 3. Failsafe (optional): Check if UART timeout -> Stop car
-    // TODO: Implement failsafe
+    // UART 버퍼의 모든 바이트를 처리
+    uint8_t data;
+    while (custom_uart_read_byte(&data)) {
+        rccar_control_process_byte(data);
+    }
 }
