@@ -16,7 +16,6 @@
 
 // Application modules
 #include "RCcar_protocol.h"
-#include "RCcar_mode.h"
 #include "RCcar_control.h"
 
 #endif // APP_LEVEL_TOP_H

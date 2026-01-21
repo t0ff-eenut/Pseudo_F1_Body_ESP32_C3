@@ -2,29 +2,21 @@
 #define RCCAR_CONTROL_H
 
 #include "app_level_top.h"
-
-/*
-******************************************************************************
-* RC Car Main Control Logic
-******************************************************************************
-* Integrates UART, Protocol, Mode, Motor, Servo
-******************************************************************************
-*/
+#include "RCcar_protocol.h"
 
 /**
- * @brief       Initialize Control Logic
- * @return      bool    true: success
+ * @brief RC카 제어 로직 초기화
  */
 bool rccar_control_init(void);
 
 /**
- * @brief       Main Control Loop Task (call periodically)
+ * @brief 메인 제어 태스크 (루프에서 실행)
  */
 void rccar_control_task(void);
 
 /**
- * @brief       Process incoming UART data
+ * @brief 수신된 바이트 처리
  */
-void rccar_control_process_uart(void);
+void rccar_control_process_byte(uint8_t byte);
 
 #endif // RCCAR_CONTROL_H

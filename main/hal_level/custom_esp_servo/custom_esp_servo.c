@@ -1,13 +1,9 @@
 /*
 ******************************************************************************
 * File Name          : custom_esp_servo.c
-* Description        : Servo Motor Control Module
+* Description        : 서보 모터 제어 모듈
 ******************************************************************************
-* Servo PWM using ESP32 LEDC
-* GPIO7, 50Hz, 500-2500us pulse width for -90~+90 degrees
-* Limited to -45~+45 degrees for steering
-******************************************************************************
-* first update : 2025/12/04
+* ESP32 LEDC를 이용한 서보 PWM 제어
 ******************************************************************************
 */
 
@@ -16,83 +12,75 @@
 #define SERVO_DEBUG  DEBUG
 static const char *custom_esp_servo_TAG = "[@]custom_esp_servo.c";
 
-// Current servo angle
-static int16_t s_i16_current_angle = 0;
+static int16_t s_current_angle = 0;
 
-// Helper: Convert angle to PWM duty
-// 50Hz = 20ms period, 13-bit resolution = 8192 steps
-// 500us (min) = 8192 * 500 / 20000 = 205
-// 1500us (center) = 8192 * 1500 / 20000 = 614
-// 2500us (max) = 8192 * 2500 / 20000 = 1024
-static uint32_t angle_to_duty(int16_t i16_angle) {
-    // Clamp angle to -45 ~ +45
-    if (i16_angle < -45) i16_angle = -45;
-    if (i16_angle > 45) i16_angle = 45;
+static uint32_t angle_to_duty(int16_t angle) {
+    // 각도 제한 (-90 ~ +90)
+    if (angle < -90) angle = -90;
+    if (angle > 90) angle = 90;
     
-    // Map -45~+45 to 500us~2500us
-    // -45 -> 1000us, 0 -> 1500us, +45 -> 2000us (narrower range for steering)
-    // Actually, let's use full range for testing: -45 -> 750us, 0 -> 1500us, +45 -> 2250us
-    uint32_t pulse_us = SERVO_CENTER_PULSE_US + (i16_angle * (SERVO_MAX_PULSE_US - SERVO_MIN_PULSE_US) / 180);
+    // -90..+90 범위를 MinPulse..MaxPulse로 매핑
+    // 공식: Pulse = Center + (Angle/90) * (Max - Center)
     
-    // Convert pulse width to duty (13-bit, 50Hz = 20000us period)
-    // duty = pulse_us * 8192 / 20000
+    int32_t pulse_us = SERVO_CENTER_PULSE_US + (angle * (SERVO_MAX_PULSE_US - SERVO_MIN_PULSE_US) / 180);
+
+    // LEDC Duty (13-bit, 8192)
+    // Duty = (PulseUS / PeriodUS) * 8192
+    // Period = 1/50Hz = 20000us
+    
     uint32_t duty = (pulse_us * 8192) / 20000;
-    
     return duty;
 }
 
 bool custom_servo_init(void) {
     #if SERVO_DEBUG
-    printf("[%s] "COLOR_WHITE"[Start]\t %s custom_servo_init()\n" COLOR_RESET, custom_getRuntimeString(), custom_esp_servo_TAG);
+    printf("[%s] [시작] custom_servo_init()\n", custom_getRuntimeString());
     #endif
     
-    // Center the servo
-    s_i16_current_angle = 0;
-    custom_servo_center();
+    ledc_timer_config_t ledc_timer = {
+        .speed_mode       = SERVO_PWM_MODE,
+        .timer_num        = SERVO_PWM_TIMER,
+        .duty_resolution  = SERVO_PWM_DUTY_RES,
+        .freq_hz          = SERVO_PWM_FREQUENCY,
+        .clk_cfg          = LEDC_AUTO_CLK
+    };
+    ledc_timer_config(&ledc_timer);
+
+    ledc_channel_config_t ledc_channel = {
+        .speed_mode     = SERVO_PWM_MODE,
+        .channel        = SERVO_PWM_CHANNEL,
+        .timer_sel      = SERVO_PWM_TIMER,
+        .intr_type      = LEDC_INTR_DISABLE,
+        .gpio_num       = SERVO_PWM_GPIO_NUM,
+        .duty           = angle_to_duty(0),
+        .hpoint         = 0
+    };
+    ledc_channel_config(&ledc_channel);
+
+    s_current_angle = 0;
     
     #if SERVO_DEBUG
-    printf("[%s] "COLOR_GREEN"[Done]\t %s custom_servo_init() - Servo module initialized\n" COLOR_RESET, custom_getRuntimeString(), custom_esp_servo_TAG);
+    printf("[%s] [완료] custom_servo_init()\n", custom_getRuntimeString());
     #endif
-    
     return true;
 }
 
-void custom_servo_set_angle(int16_t i16_angle) {
-    #if SERVO_DEBUG
-    printf("[%s] "COLOR_WHITE"[Info]\t %s custom_servo_set_angle() - angle: %d\n" COLOR_RESET, custom_getRuntimeString(), custom_esp_servo_TAG, i16_angle);
-    #endif
-    
-    // Clamp angle
-    if (i16_angle < -45) i16_angle = -45;
-    if (i16_angle > 45) i16_angle = 45;
-    
-    s_i16_current_angle = i16_angle;
-    
-    // Set PWM duty
-    uint32_t duty = angle_to_duty(i16_angle);
+void custom_servo_set_angle(int16_t angle) {
+    s_current_angle = angle;
+    uint32_t duty = angle_to_duty(angle);
     ledc_set_duty(SERVO_PWM_MODE, SERVO_PWM_CHANNEL, duty);
     ledc_update_duty(SERVO_PWM_MODE, SERVO_PWM_CHANNEL);
 }
 
 int16_t custom_servo_get_angle(void) {
-    return s_i16_current_angle;
+    return s_current_angle;
 }
 
 void custom_servo_center(void) {
-    #if SERVO_DEBUG
-    printf("[%s] "COLOR_YELLOW"[Action]\t %s custom_servo_center()\n" COLOR_RESET, custom_getRuntimeString(), custom_esp_servo_TAG);
-    #endif
-    
     custom_servo_set_angle(0);
 }
 
 bool custom_servo_deinit(void) {
-    #if SERVO_DEBUG
-    printf("[%s] "COLOR_WHITE"[Info]\t %s custom_servo_deinit()\n" COLOR_RESET, custom_getRuntimeString(), custom_esp_servo_TAG);
-    #endif
-    
-    // Center servo before deinit
     custom_servo_center();
-    
     return true;
 }
