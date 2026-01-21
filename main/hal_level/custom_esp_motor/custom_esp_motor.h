@@ -1,91 +1,66 @@
 #ifndef CUSTOM_ESP_MOTOR_H
 #define CUSTOM_ESP_MOTOR_H
 
-#include "hw_level_handle.h"
+#include "hal_level_handle.h"
 
 /*
 ******************************************************************************
-* Motor Control Module - L298N Driver Interface
+* DC Motor Control Module Header
 ******************************************************************************
-* DC Motor A (Left)  : ENA(PWM), IN1, IN2
-* DC Motor B (Right) : ENB(PWM), IN3, IN4
+* Supports 2 DC Motors (Front and Rear)
+* Each motor controlled by 2 pins (IN1, IN2)
 ******************************************************************************
 */
 
-/**
- * @enum        motor_direction_enum(mde)
- * @brief       Motor Direction Enum
- * @param MOTOR_STOP        0 - Coast (free spin)
- * @param MOTOR_FORWARD     1 - Forward
- * @param MOTOR_BACKWARD    2 - Backward
- * @param MOTOR_BRAKE       3 - Brake (active stop)
- */
-typedef enum motor_direction_enum {
+typedef enum {
     MOTOR_STOP = 0,
     MOTOR_FORWARD,
     MOTOR_BACKWARD,
-    MOTOR_BRAKE,
-} mde;
+    MOTOR_BRAKE
+} mde; // Motor Direction Enum
+
+typedef struct {
+    int8_t speed_front; // -100 to 100
+    int8_t speed_rear;  // -100 to 100
+    mde dir_front;
+    mde dir_rear;
+} mss; // Motor State Struct
 
 /**
- * @struct      motor_state_struct(mss)
- * @brief       Motor State Structure
- * @param int8_t    i8_speed_left   : Left motor speed (-100 ~ +100)
- * @param int8_t    i8_speed_right  : Right motor speed (-100 ~ +100)
- * @param mde       mde_dir_left    : Left motor direction
- * @param mde       mde_dir_right   : Right motor direction
- */
-typedef struct motor_state_struct {
-    int8_t i8_speed_left;
-    int8_t i8_speed_right;
-    mde mde_dir_left;
-    mde mde_dir_right;
-} mss;
-
-/**
- * @brief       Motor Module Initialize
- * @return      bool    true: success, false: failed
+ * @brief Initialize Motor Module
+ * @return true if success
  */
 bool custom_motor_init(void);
 
 /**
- * @brief       Set left motor speed
- * @param[in]   i8_speed : -100(backward) ~ 0(stop) ~ +100(forward)
+ * @brief Set Front Motor Speed
+ * @param speed -100 (Full Reverse) to 100 (Full Forward)
  */
-void custom_motor_set_left(int8_t i8_speed);
+void custom_motor_set_front(int8_t speed);
 
 /**
- * @brief       Set right motor speed
- * @param[in]   i8_speed : -100(backward) ~ 0(stop) ~ +100(forward)
+ * @brief Set Rear Motor Speed
+ * @param speed -100 (Full Reverse) to 100 (Full Forward)
  */
-void custom_motor_set_right(int8_t i8_speed);
+void custom_motor_set_rear(int8_t speed);
 
 /**
- * @brief       Set both motors speed
- * @param[in]   i8_left  : Left motor speed (-100 ~ +100)
- * @param[in]   i8_right : Right motor speed (-100 ~ +100)
+ * @brief Set Both Motors Speed
  */
-void custom_motor_set_both(int8_t i8_left, int8_t i8_right);
+void custom_motor_set_both(int8_t front_speed, int8_t rear_speed);
 
 /**
- * @brief       Brake both motors (active stop)
+ * @brief Stop All Motors (Coast)
  */
-void custom_motor_brake(void);
+void custom_motor_stop_all(void);
 
 /**
- * @brief       Coast both motors (free spin)
- */
-void custom_motor_coast(void);
-
-/**
- * @brief       Get current motor state
- * @return      mss     Motor state structure
+ * @brief Get Current Motor State
  */
 mss custom_motor_get_state(void);
 
 /**
- * @brief       Motor Module Deinitialize
- * @return      bool    true: success, false: failed
+ * @brief Deinitialize Motor Module
  */
 bool custom_motor_deinit(void);
 

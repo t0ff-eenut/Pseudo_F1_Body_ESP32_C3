@@ -1,99 +1,54 @@
 #ifndef RCCAR_PROTOCOL_H
 #define RCCAR_PROTOCOL_H
 
-#include "hal_level_handle.h"
+#include <stdint.h>
+#include <stdbool.h>
 
-/*
-******************************************************************************
-* RC Car Communication Protocol
-******************************************************************************
-* Packet Format:
-* [HEADER][CMD][THROTTLE][STEERING][CHECKSUM]
-*  0xAA    1B    1B        1B        1B
-*
-* Commands:
-* - 0x01: Manual Control (throttle + steering)
-* - 0x02: Auto Control (AI command)
-* - 0x03: Stop (emergency stop)
-* - 0x10: Status Request
-* - 0x11: Status Response
-******************************************************************************
-*/
+// Protocol Constants
+#define PROTOCOL_STX            0xAA
+#define PROTOCOL_ETX            0x55
+#define PROTOCOL_PACKET_SIZE    6
 
-#define PROTOCOL_HEADER         0xAA
-#define PROTOCOL_PACKET_SIZE    5
+// Command Types
+typedef enum {
+    CMD_HEARTBEAT       = 0x00,
+    CMD_CONTROL         = 0x01,  // param1: throttle, param2: steering
+    CMD_SET_MODE        = 0x02,  // param1: mode
+    CMD_EMERGENCY_STOP  = 0xFF
+} rc_cmd_type_t;
 
-/**
- * @enum        command_type_enum(cte)
- * @brief       Command Type Enum
- */
-typedef enum command_type_enum {
-    CMD_MANUAL_CONTROL = 0x01,
-    CMD_AUTO_CONTROL   = 0x02,
-    CMD_STOP           = 0x03,
-    CMD_STATUS_REQ     = 0x10,
-    CMD_STATUS_RESP    = 0x11,
-    CMD_UNKNOWN        = 0xFF,
-} cte;
+// Packet Structure
+typedef struct {
+    uint8_t stx;        // Start of Text
+    uint8_t cmd;        // Command Type
+    int8_t  param1;     // Parameter 1 (e.g., Throttle: -100 to 100)
+    int8_t  param2;     // Parameter 2 (e.g., Steering: -100 to 100)
+    uint8_t checksum;   // XOR Checksum of cmd, param1, param2
+    uint8_t etx;        // End of Text
+} __attribute__((packed)) rc_packet_t;
 
 /**
- * @struct      command_packet_struct(cps)
- * @brief       Command Packet Structure
+ * @brief Initialize protocol handler
  */
-typedef struct command_packet_struct {
-    uint8_t ui8_header;       // 0xAA
-    uint8_t ui8_cmd_type;     // Command type
-    int8_t  i8_throttle;      // -100 ~ +100 (motor speed)
-    int8_t  i8_steering;      // -45 ~ +45 (servo angle)
-    uint8_t ui8_checksum;     // XOR checksum
-} cps;
+void rccar_protocol_init(void);
 
 /**
- * @struct      status_packet_struct(sps)
- * @brief       Status Response Packet Structure
+ * @brief Parse a single byte from UART
+ *
+ * @param byte Received byte
+ * @param out_packet Pointer to store the parsed packet when complete
+ * @return true if a valid packet is completed, false otherwise
  */
-typedef struct status_packet_struct {
-    uint8_t ui8_header;       // 0xAA
-    uint8_t ui8_cmd_type;     // CMD_STATUS_RESP
-    int8_t  i8_motor_left;    // Current left motor speed
-    int8_t  i8_motor_right;   // Current right motor speed
-    int8_t  i8_servo_angle;   // Current servo angle
-    uint8_t ui8_checksum;     // XOR checksum
-} sps;
+bool rccar_protocol_parse_byte(uint8_t byte, rc_packet_t *out_packet);
 
 /**
- * @brief       Parse received packet
- * @param[in]   p_data : Raw data buffer
- * @param[in]   ui16_len : Data length
- * @param[out]  p_packet : Parsed packet structure
- * @return      bool    true: valid packet, false: invalid
+ * @brief Create a packet
+ *
+ * @param cmd Command type
+ * @param p1 Parameter 1
+ * @param p2 Parameter 2
+ * @param out_packet Pointer to store the created packet
  */
-bool protocol_parse_packet(const uint8_t* p_data, uint16_t ui16_len, cps* p_packet);
-
-/**
- * @brief       Calculate checksum
- * @param[in]   p_data : Data buffer (excluding checksum byte)
- * @param[in]   ui16_len : Data length
- * @return      uint8_t Calculated checksum (XOR of all bytes)
- */
-uint8_t protocol_calc_checksum(const uint8_t* p_data, uint16_t ui16_len);
-
-/**
- * @brief       Build status response packet
- * @param[out]  p_packet : Status packet to fill
- */
-void protocol_build_status_response(sps* p_packet);
-
-/**
- * @brief       Send status response via UART
- * @return      bool    true: success, false: failed
- */
-bool protocol_send_status(void);
-
-/**
- * @brief       Process received command
- * @param[in]   p_packet : Parsed command packet
- */
-void protocol_process_command(const cps* p_packet);
+void rccar_protocol_create_packet(rc_cmd_type_t cmd, int8_t p1, int8_t p2, rc_packet_t *out_packet);
 
 #endif // RCCAR_PROTOCOL_H

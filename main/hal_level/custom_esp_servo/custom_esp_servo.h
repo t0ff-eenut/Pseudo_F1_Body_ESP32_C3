@@ -1,43 +1,34 @@
 #ifndef CUSTOM_ESP_SERVO_H
 #define CUSTOM_ESP_SERVO_H
 
-#include "hw_level_handle.h"
-
-/*
-******************************************************************************
-* Servo Motor Control Module
-******************************************************************************
-* Servo PWM: GPIO7, 50Hz, 500-2500us pulse width
-* Angle range: -45 ~ +45 degrees (for steering)
-******************************************************************************
-*/
+#include "hal_level_handle.h"
 
 /**
- * @brief       Servo Module Initialize
- * @return      bool    true: success, false: failed
+ * @brief Initialize Servo Module
+ * @return true if success
  */
 bool custom_servo_init(void);
 
 /**
- * @brief       Set servo angle
- * @param[in]   i16_angle : -45 ~ +45 degrees
+ * @brief Set Servo Angle
+ * @param angle Angle in degrees (-45 to 45 or -90 to 90 depending on mechanism)
+ *              Assuming -90 (Left) to +90 (Right), 0 (Center)
  */
-void custom_servo_set_angle(int16_t i16_angle);
+void custom_servo_set_angle(int16_t angle);
 
 /**
- * @brief       Get current servo angle
- * @return      int16_t : Current angle (-45 ~ +45)
+ * @brief Get Current Servo Angle
+ * @return Current angle
  */
 int16_t custom_servo_get_angle(void);
 
 /**
- * @brief       Center the servo (0 degrees)
+ * @brief Center the servo
  */
 void custom_servo_center(void);
 
 /**
- * @brief       Servo Module Deinitialize
- * @return      bool    true: success, false: failed
+ * @brief Deinitialize Servo Module
  */
 bool custom_servo_deinit(void);
 

@@ -1,212 +1,127 @@
 /*
 ******************************************************************************
 * File Name          : custom_esp_motor.c
-* Description        : DC Motor Control Module for L298N Driver
+* Description        : DC Motor Control Module
 ******************************************************************************
-* L298N Motor Driver Control using ESP32 LEDC (PWM)
-* Motor A (Left)  : ENA(GPIO2), IN1(GPIO3), IN2(GPIO4)
-* Motor B (Right) : ENB(GPIO10), IN3(GPIO5), IN4(GPIO6)
-******************************************************************************
-* first update : 2025/12/04
+* Controls 2 DC Motors (Front and Rear) using 2 pins each.
+* Logic:
+*  Forward: IN1 = PWM, IN2 = LOW
+*  Reverse: IN1 = LOW, IN2 = PWM
+*  Stop:    IN1 = LOW, IN2 = LOW
+*  Brake:   IN1 = HIGH, IN2 = HIGH (Not used in this impl yet)
 ******************************************************************************
 */
 
 #include "custom_esp_motor.h"
 
-#define MOTOR_DEBUG  DEBUG
+#define MOTOR_DEBUG DEBUG
 static const char *custom_esp_motor_TAG = "[@]custom_esp_motor.c";
 
-// Current motor state
 static mss s_motor_state = {
-    .i8_speed_left = 0,
-    .i8_speed_right = 0,
-    .mde_dir_left = MOTOR_STOP,
-    .mde_dir_right = MOTOR_STOP
+    .speed_front = 0,
+    .speed_rear = 0,
+    .dir_front = MOTOR_STOP,
+    .dir_rear = MOTOR_STOP
 };
 
-// Helper: Convert speed (-100~+100) to PWM duty (0~1023 for 10-bit)
-static uint32_t speed_to_duty(int8_t i8_speed) {
-    if (i8_speed < 0) i8_speed = -i8_speed;  // absolute value
-    if (i8_speed > 100) i8_speed = 100;
-    
-    // Map 0-100 to 0-1023 (10-bit resolution)
-    return (uint32_t)(i8_speed * 1023 / 100);
+static uint32_t speed_to_duty(int8_t speed) {
+    if (speed < 0) speed = -speed;
+    if (speed > 100) speed = 100;
+    // Map 0-100 to 0-1023
+    return (uint32_t)(speed * 1023 / 100);
 }
 
-// Helper: Set motor A direction pins
-static void set_motor_a_direction(mde direction) {
-    switch (direction) {
-        case MOTOR_FORWARD:
-            gpio_set_level(MOTOR_A_IN1_GPIO_NUM, 1);
-            gpio_set_level(MOTOR_A_IN2_GPIO_NUM, 0);
-            break;
-        case MOTOR_BACKWARD:
-            gpio_set_level(MOTOR_A_IN1_GPIO_NUM, 0);
-            gpio_set_level(MOTOR_A_IN2_GPIO_NUM, 1);
-            break;
-        case MOTOR_BRAKE:
-            gpio_set_level(MOTOR_A_IN1_GPIO_NUM, 1);
-            gpio_set_level(MOTOR_A_IN2_GPIO_NUM, 1);
-            break;
-        case MOTOR_STOP:
-        default:
-            gpio_set_level(MOTOR_A_IN1_GPIO_NUM, 0);
-            gpio_set_level(MOTOR_A_IN2_GPIO_NUM, 0);
-            break;
-    }
-}
-
-// Helper: Set motor B direction pins
-static void set_motor_b_direction(mde direction) {
-    switch (direction) {
-        case MOTOR_FORWARD:
-            gpio_set_level(MOTOR_B_IN3_GPIO_NUM, 1);
-            gpio_set_level(MOTOR_B_IN4_GPIO_NUM, 0);
-            break;
-        case MOTOR_BACKWARD:
-            gpio_set_level(MOTOR_B_IN3_GPIO_NUM, 0);
-            gpio_set_level(MOTOR_B_IN4_GPIO_NUM, 1);
-            break;
-        case MOTOR_BRAKE:
-            gpio_set_level(MOTOR_B_IN3_GPIO_NUM, 1);
-            gpio_set_level(MOTOR_B_IN4_GPIO_NUM, 1);
-            break;
-        case MOTOR_STOP:
-        default:
-            gpio_set_level(MOTOR_B_IN3_GPIO_NUM, 0);
-            gpio_set_level(MOTOR_B_IN4_GPIO_NUM, 0);
-            break;
-    }
+static void config_pwm_channel(int gpio_num, ledc_channel_t channel) {
+    ledc_channel_config_t ledc_channel = {
+        .speed_mode     = MOTOR_PWM_MODE,
+        .channel        = channel,
+        .timer_sel      = MOTOR_PWM_TIMER,
+        .intr_type      = LEDC_INTR_DISABLE,
+        .gpio_num       = gpio_num,
+        .duty           = 0, // Set duty to 0%
+        .hpoint         = 0
+    };
+    ledc_channel_config(&ledc_channel);
 }
 
 bool custom_motor_init(void) {
     #if MOTOR_DEBUG
-    printf("[%s] "COLOR_WHITE"[Start]\t %s custom_motor_init()\n" COLOR_RESET, custom_getRuntimeString(), custom_esp_motor_TAG);
+    printf("[%s] [Start] custom_motor_init()\n", custom_getRuntimeString());
     #endif
-    
-    // Reset motor state
-    s_motor_state.i8_speed_left = 0;
-    s_motor_state.i8_speed_right = 0;
-    s_motor_state.mde_dir_left = MOTOR_STOP;
-    s_motor_state.mde_dir_right = MOTOR_STOP;
-    
-    // Set initial state: stopped
-    custom_motor_coast();
-    
+
+    // Configure Timer
+    ledc_timer_config_t ledc_timer = {
+        .speed_mode       = MOTOR_PWM_MODE,
+        .timer_num        = MOTOR_PWM_TIMER,
+        .duty_resolution  = MOTOR_PWM_DUTY_RES,
+        .freq_hz          = MOTOR_PWM_FREQUENCY,
+        .clk_cfg          = LEDC_AUTO_CLK
+    };
+    ledc_timer_config(&ledc_timer);
+
+    // Configure Channels
+    config_pwm_channel(MOTOR_FRONT_IN1_GPIO_NUM, MOTOR_FRONT_IN1_CHANNEL);
+    config_pwm_channel(MOTOR_FRONT_IN2_GPIO_NUM, MOTOR_FRONT_IN2_CHANNEL);
+    config_pwm_channel(MOTOR_REAR_IN1_GPIO_NUM, MOTOR_REAR_IN1_CHANNEL);
+    config_pwm_channel(MOTOR_REAR_IN2_GPIO_NUM, MOTOR_REAR_IN2_CHANNEL);
+
+    custom_motor_stop_all();
+
     #if MOTOR_DEBUG
-    printf("[%s] "COLOR_GREEN"[Done]\t %s custom_motor_init() - Motor module initialized\n" COLOR_RESET, custom_getRuntimeString(), custom_esp_motor_TAG);
+    printf("[%s] [Done] custom_motor_init()\n", custom_getRuntimeString());
     #endif
-    
     return true;
 }
 
-void custom_motor_set_left(int8_t i8_speed) {
-    #if MOTOR_DEBUG
-    printf("[%s] "COLOR_WHITE"[Info]\t %s custom_motor_set_left() - speed: %d\n" COLOR_RESET, custom_getRuntimeString(), custom_esp_motor_TAG, i8_speed);
-    #endif
+static void set_motor_pwm(ledc_channel_t ch_in1, ledc_channel_t ch_in2, int8_t speed) {
+    uint32_t duty = speed_to_duty(speed);
     
-    // Clamp speed to valid range
-    if (i8_speed > 100) i8_speed = 100;
-    if (i8_speed < -100) i8_speed = -100;
-    
-    s_motor_state.i8_speed_left = i8_speed;
-    
-    // Determine direction
-    if (i8_speed > 0) {
-        s_motor_state.mde_dir_left = MOTOR_FORWARD;
-        set_motor_a_direction(MOTOR_FORWARD);
-    } else if (i8_speed < 0) {
-        s_motor_state.mde_dir_left = MOTOR_BACKWARD;
-        set_motor_a_direction(MOTOR_BACKWARD);
+    if (speed > 0) {
+        // Forward: IN1=PWM, IN2=0
+        ledc_set_duty(MOTOR_PWM_MODE, ch_in1, duty);
+        ledc_update_duty(MOTOR_PWM_MODE, ch_in1);
+        ledc_set_duty(MOTOR_PWM_MODE, ch_in2, 0);
+        ledc_update_duty(MOTOR_PWM_MODE, ch_in2);
+    } else if (speed < 0) {
+        // Reverse: IN1=0, IN2=PWM
+        ledc_set_duty(MOTOR_PWM_MODE, ch_in1, 0);
+        ledc_update_duty(MOTOR_PWM_MODE, ch_in1);
+        ledc_set_duty(MOTOR_PWM_MODE, ch_in2, duty);
+        ledc_update_duty(MOTOR_PWM_MODE, ch_in2);
     } else {
-        s_motor_state.mde_dir_left = MOTOR_STOP;
-        set_motor_a_direction(MOTOR_STOP);
+        // Stop: IN1=0, IN2=0
+        ledc_set_duty(MOTOR_PWM_MODE, ch_in1, 0);
+        ledc_update_duty(MOTOR_PWM_MODE, ch_in1);
+        ledc_set_duty(MOTOR_PWM_MODE, ch_in2, 0);
+        ledc_update_duty(MOTOR_PWM_MODE, ch_in2);
     }
-    
-    // Set PWM duty
-    uint32_t duty = speed_to_duty(i8_speed);
-    ledc_set_duty(MOTOR_PWM_MODE, MOTOR_A_PWM_CHANNEL, duty);
-    ledc_update_duty(MOTOR_PWM_MODE, MOTOR_A_PWM_CHANNEL);
 }
 
-void custom_motor_set_right(int8_t i8_speed) {
-    #if MOTOR_DEBUG
-    printf("[%s] "COLOR_WHITE"[Info]\t %s custom_motor_set_right() - speed: %d\n" COLOR_RESET, custom_getRuntimeString(), custom_esp_motor_TAG, i8_speed);
-    #endif
-    
-    // Clamp speed to valid range
-    if (i8_speed > 100) i8_speed = 100;
-    if (i8_speed < -100) i8_speed = -100;
-    
-    s_motor_state.i8_speed_right = i8_speed;
-    
-    // Determine direction
-    if (i8_speed > 0) {
-        s_motor_state.mde_dir_right = MOTOR_FORWARD;
-        set_motor_b_direction(MOTOR_FORWARD);
-    } else if (i8_speed < 0) {
-        s_motor_state.mde_dir_right = MOTOR_BACKWARD;
-        set_motor_b_direction(MOTOR_BACKWARD);
-    } else {
-        s_motor_state.mde_dir_right = MOTOR_STOP;
-        set_motor_b_direction(MOTOR_STOP);
-    }
-    
-    // Set PWM duty
-    uint32_t duty = speed_to_duty(i8_speed);
-    ledc_set_duty(MOTOR_PWM_MODE, MOTOR_B_PWM_CHANNEL, duty);
-    ledc_update_duty(MOTOR_PWM_MODE, MOTOR_B_PWM_CHANNEL);
+void custom_motor_set_front(int8_t speed) {
+    s_motor_state.speed_front = speed;
+    if (speed > 0) s_motor_state.dir_front = MOTOR_FORWARD;
+    else if (speed < 0) s_motor_state.dir_front = MOTOR_BACKWARD;
+    else s_motor_state.dir_front = MOTOR_STOP;
+
+    set_motor_pwm(MOTOR_FRONT_IN1_CHANNEL, MOTOR_FRONT_IN2_CHANNEL, speed);
 }
 
-void custom_motor_set_both(int8_t i8_left, int8_t i8_right) {
-    #if MOTOR_DEBUG
-    printf("[%s] "COLOR_WHITE"[Info]\t %s custom_motor_set_both() - L:%d R:%d\n" COLOR_RESET, custom_getRuntimeString(), custom_esp_motor_TAG, i8_left, i8_right);
-    #endif
-    
-    custom_motor_set_left(i8_left);
-    custom_motor_set_right(i8_right);
+void custom_motor_set_rear(int8_t speed) {
+    s_motor_state.speed_rear = speed;
+    if (speed > 0) s_motor_state.dir_rear = MOTOR_FORWARD;
+    else if (speed < 0) s_motor_state.dir_rear = MOTOR_BACKWARD;
+    else s_motor_state.dir_rear = MOTOR_STOP;
+
+    set_motor_pwm(MOTOR_REAR_IN1_CHANNEL, MOTOR_REAR_IN2_CHANNEL, speed);
 }
 
-void custom_motor_brake(void) {
-    #if MOTOR_DEBUG
-    printf("[%s] "COLOR_YELLOW"[Action]\t %s custom_motor_brake()\n" COLOR_RESET, custom_getRuntimeString(), custom_esp_motor_TAG);
-    #endif
-    
-    // Set direction to brake (both IN high)
-    set_motor_a_direction(MOTOR_BRAKE);
-    set_motor_b_direction(MOTOR_BRAKE);
-    
-    // Full duty for active braking
-    ledc_set_duty(MOTOR_PWM_MODE, MOTOR_A_PWM_CHANNEL, 1023);
-    ledc_update_duty(MOTOR_PWM_MODE, MOTOR_A_PWM_CHANNEL);
-    ledc_set_duty(MOTOR_PWM_MODE, MOTOR_B_PWM_CHANNEL, 1023);
-    ledc_update_duty(MOTOR_PWM_MODE, MOTOR_B_PWM_CHANNEL);
-    
-    s_motor_state.i8_speed_left = 0;
-    s_motor_state.i8_speed_right = 0;
-    s_motor_state.mde_dir_left = MOTOR_BRAKE;
-    s_motor_state.mde_dir_right = MOTOR_BRAKE;
+void custom_motor_set_both(int8_t front_speed, int8_t rear_speed) {
+    custom_motor_set_front(front_speed);
+    custom_motor_set_rear(rear_speed);
 }
 
-void custom_motor_coast(void) {
-    #if MOTOR_DEBUG
-    printf("[%s] "COLOR_YELLOW"[Action]\t %s custom_motor_coast()\n" COLOR_RESET, custom_getRuntimeString(), custom_esp_motor_TAG);
-    #endif
-    
-    // Set direction to stop (both IN low) - coast/free spin
-    set_motor_a_direction(MOTOR_STOP);
-    set_motor_b_direction(MOTOR_STOP);
-    
-    // Zero duty
-    ledc_set_duty(MOTOR_PWM_MODE, MOTOR_A_PWM_CHANNEL, 0);
-    ledc_update_duty(MOTOR_PWM_MODE, MOTOR_A_PWM_CHANNEL);
-    ledc_set_duty(MOTOR_PWM_MODE, MOTOR_B_PWM_CHANNEL, 0);
-    ledc_update_duty(MOTOR_PWM_MODE, MOTOR_B_PWM_CHANNEL);
-    
-    s_motor_state.i8_speed_left = 0;
-    s_motor_state.i8_speed_right = 0;
-    s_motor_state.mde_dir_left = MOTOR_STOP;
-    s_motor_state.mde_dir_right = MOTOR_STOP;
+void custom_motor_stop_all(void) {
+    custom_motor_set_both(0, 0);
 }
 
 mss custom_motor_get_state(void) {
@@ -214,12 +129,6 @@ mss custom_motor_get_state(void) {
 }
 
 bool custom_motor_deinit(void) {
-    #if MOTOR_DEBUG
-    printf("[%s] "COLOR_WHITE"[Info]\t %s custom_motor_deinit()\n" COLOR_RESET, custom_getRuntimeString(), custom_esp_motor_TAG);
-    #endif
-    
-    // Stop motors before deinit
-    custom_motor_coast();
-    
+    custom_motor_stop_all();
     return true;
 }
