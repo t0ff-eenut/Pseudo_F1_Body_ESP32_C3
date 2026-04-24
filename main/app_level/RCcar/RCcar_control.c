@@ -1,7 +1,15 @@
 #include "RCcar_control.h"
+#include "esp_timer.h"
 
 #define CONTROL_DEBUG DEBUG
 static const char *TAG = "[@]RCcar_control";
+
+// ─── Failsafe 상태 변수 ────────────────────────────────────────────────────
+static uint32_t s_last_packet_ms  = 0;   // 마지막 유효 패킷 수신 시각 (ms)
+static uint32_t s_last_step_ms    = 0;   // 마지막 페일세이프 스텝 시각 (ms)
+static int8_t   s_current_speed   = 0;   // 현재 속도 (점진적 감속 추적용)
+static int16_t  s_current_angle   = 0;   // 현재 서보 각도 (점진적 정렬 추적용)
+// ──────────────────────────────────────────────────────────────────────────
 
 bool rccar_control_init(void) {
     #if CONTROL_DEBUG
@@ -25,73 +33,65 @@ void rccar_control_process_byte(uint8_t byte) {
     if (rccar_protocol_parse_byte(byte, &packet)) {
         // 유효한 패킷 수신됨
         switch (packet.cmd) {
-            case CMD_CONTROL:
-                // Param1: 속도 (Throttle) -100 ~ 100
-                // Param2: 각도 (Steering) -100 ~ 100
+            case CMD_CONTROL: {
+                /*
+                 * [CMD_CONTROL 파이프라인]
+                 *
+                 * ┌─────────────────────────────────────────────────────────┐
+                 * │ UART 수신 (int8_t, 1바이트)                              │
+                 * │  param1: -127 ~ +127  (음수=후진,  양수=전진)            │
+                 * │  param2: -127 ~ +127  (음수=좌조향, 양수=우조향)         │
+                 * └────────────────────┬────────────────────────────────────┘
+                 *                      │
+                 *          ┌───────────┴───────────┐
+                 *          ▼                       ▼
+                 * [Throttle]                   [Steering]
+                 * param1 그대로 전달            param2 * 90 / 127
+                 *  -127 ~ +127                  -90° ~ +90°
+                 *          │                       │
+                 *          ▼                       ▼
+                 * custom_motor_set_both()    custom_servo_set_angle()
+                 *  speed_to_duty(speed)       angle_to_duty(angle)
+                 *  |speed| * 1023 / 127       1500 + (angle * 2000 / 180) us
+                 *  0 ~ 1023 (10-bit PWM)      500 ~ 2500 us
+                 *          │                       │
+                 *          ▼                       ▼
+                 *   LEDC CH0/1/2/3            LEDC CH4
+                 *   20kHz PWM                 50Hz PWM
+                 *   GPIO 4,5,6,10             GPIO 7
+                 * └─────────────────────────────────────────────────────────┘
+                 */
+                // Param1: 속도 (Throttle) -127 ~ +127 → 모터 직접 전달
+                // Param2: 조향 (Steering) -127 ~ +127 → 서보 -90° ~ +90°으로 변환
+                int16_t servo_angle = (int16_t)packet.param2 * 90 / 127;
                 custom_motor_set_both(packet.param1, packet.param1);
-                custom_servo_set_angle(packet.param2);
-                break;
-
-            case CMD_CONTROL_RAW: {
-                // 직접 PWM 제어 (모터)
-                // Param1: PWM 상위 바이트 (0~3, 10-bit의 상위 2비트)
-                // Param2: PWM 하위 바이트 (0~255, 10-bit의 하위 8비트)
-                // 16-bit 재구성: PWM = (param1 << 8) | (param2 & 0xFF)
-                uint16_t motor_pwm = ((uint16_t)(packet.param1 & 0xFF) << 8) | (uint8_t)packet.param2;
-                
-                // 10-bit 범위 제한 (0 ~ 1023)
-                if (motor_pwm > 1023) motor_pwm = 1023;
-                
-                // PWM을 속도로 변환 (-100 ~ 100)
-                // 양수로만 처리 (방향은 별도 명령어로 확장 가능)
-                int8_t speed = (int8_t)((motor_pwm * 100) / 1023);
-                custom_motor_set_both(speed, speed);
-                
-                #if CONTROL_DEBUG
-                printf("[%s] CMD_CONTROL_RAW: PWM=%d, Speed=%d\n", 
-                       custom_getRuntimeString(), motor_pwm, speed);
-                #endif
+                custom_servo_set_angle(servo_angle);
+                // 페일세이프 상태 갱신
+                s_current_speed = packet.param1;
+                s_current_angle = servo_angle;
+                s_last_packet_ms = (uint32_t)(esp_timer_get_time() / 1000);
                 break;
             }
 
-            case CMD_SERVO_RAW: {
-                // 직접 PWM 제어 (서보)
-                // Param1: PWM 상위 바이트 (0~31, 13-bit의 상위 5비트)
-                // Param2: PWM 하위 바이트 (0~255, 13-bit의 하위 8비트)
-                uint16_t servo_pwm = ((uint16_t)(packet.param1 & 0xFF) << 8) | (uint8_t)packet.param2;
-                
-                // 13-bit 범위 제한 (0 ~ 8191)
-                if (servo_pwm > 8191) servo_pwm = 8191;
-                
-                // PWM을 각도로 역변환
-                // PWM = (pulse_us * 8192) / 20000
-                // pulse_us = (PWM * 20000) / 8192
-                uint32_t pulse_us = (servo_pwm * 20000) / 8192;
-                
-                // pulse_us를 각도로 변환
-                // pulse_us = 1500 + (angle * 1000 / 90)
-                // angle = (pulse_us - 1500) * 90 / 1000
-                int16_t angle = ((int32_t)pulse_us - 1500) * 90 / 1000;
-                
-                custom_servo_set_angle(angle);
-                
-                #if CONTROL_DEBUG
-                printf("[%s] CMD_SERVO_RAW: PWM=%d, Pulse=%luus, Angle=%d\n", 
-                       custom_getRuntimeString(), servo_pwm, pulse_us, angle);
-                #endif
-                break;
-            }
-
-            case CMD_SET_MODE:
-                // 모드 변경 구현 시 사용
+            case CMD_BRAKE:
+                // Param1: 전륜 브레이크 강도 0~127
+                // Param2: 후륜 브레이크 강도 0~127
+                // 전/후륜 독립 제어 가능 (드리프트 시 후륜만 강하게 제동 등)
+                custom_motor_brake_front(packet.param1);
+                custom_motor_brake_rear(packet.param2);
+                s_last_packet_ms = (uint32_t)(esp_timer_get_time() / 1000);
                 break;
 
             case CMD_EMERGENCY_STOP:
                 custom_motor_stop_all();
+                s_current_speed  = 0;
+                s_current_angle  = 0;
+                s_last_packet_ms = (uint32_t)(esp_timer_get_time() / 1000);
                 break;
 
             case CMD_HEARTBEAT:
-                // 워치독 리셋 등 구현 시 사용
+                // 워치독 리셋 - 페일세이프 타이머 갱신
+                s_last_packet_ms = (uint32_t)(esp_timer_get_time() / 1000);
                 break;
 
             default:
@@ -106,4 +106,34 @@ void rccar_control_task(void) {
     while (custom_uart_read_byte(&data)) {
         rccar_control_process_byte(data);
     }
+
+    // ─── Failsafe: 점진적 감속 및 서보 중앙 정렬 ───────────────────────────
+    uint32_t now_ms = (uint32_t)(esp_timer_get_time() / 1000);
+    if (now_ms - s_last_packet_ms > FAILSAFE_TIMEOUT_MS) {
+        // FAILSAFE_STEP_INTERVAL_MS 주기마다 한 단계씩 감속/정렬
+        if (now_ms - s_last_step_ms >= FAILSAFE_STEP_INTERVAL_MS) {
+            s_last_step_ms = now_ms;
+
+            // 속도 점진적 감소 (0에 가까워질수록 MOTOR_STEP 이하면 0으로 클램프)
+            if (s_current_speed > FAILSAFE_MOTOR_STEP) {
+                s_current_speed -= FAILSAFE_MOTOR_STEP;
+            } else if (s_current_speed < -FAILSAFE_MOTOR_STEP) {
+                s_current_speed += FAILSAFE_MOTOR_STEP;
+            } else {
+                s_current_speed = 0;
+            }
+            custom_motor_set_both(s_current_speed, s_current_speed);
+
+            // 서보 점진적 중앙 정렬 (0°에 가까워질수록 SERVO_STEP 이하면 0으로 클램프)
+            if (s_current_angle > FAILSAFE_SERVO_STEP) {
+                s_current_angle -= FAILSAFE_SERVO_STEP;
+            } else if (s_current_angle < -FAILSAFE_SERVO_STEP) {
+                s_current_angle += FAILSAFE_SERVO_STEP;
+            } else {
+                s_current_angle = 0;
+            }
+            custom_servo_set_angle((int16_t)s_current_angle);
+        }
+    }
+    // ──────────────────────────────────────────────────────────────────────
 }

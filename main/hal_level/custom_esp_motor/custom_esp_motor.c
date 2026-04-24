@@ -5,10 +5,13 @@
 ******************************************************************************
 * 2개의 DC 모터(전륜, 후륜)를 각각 2개의 핀으로 제어합니다.
 * 로직:
-*  전진: IN1 = PWM, IN2 = LOW
-*  후진: IN1 = LOW, IN2 = PWM
-*  정지: IN1 = LOW, IN2 = LOW
-*  브레이크: IN1 = HIGH, IN2 = HIGH (현재 미구현)
+*  전진:   IN1 = PWM, IN2 = 0          (속도 비례 구동)
+*  후진:   IN1 = 0,   IN2 = PWM
+*  코스팅: IN1 = 0,   IN2 = 0          (관성 회전, 제동력 없음)
+*  브레이크: IN1 = PWM, IN2 = PWM (동일 duty → 쇼트 브레이크)
+*         duty=0:    0% 브레이크 (코스팅 동일)
+*         duty=512:  50% 브레이크
+*         duty=1023: 100% 쇼트 브레이크
 ******************************************************************************
 */
 
@@ -26,9 +29,9 @@ static mss s_motor_state = {
 
 static uint32_t speed_to_duty(int8_t speed) {
     if (speed < 0) speed = -speed;
-    if (speed > 100) speed = 100;
-    // 0-100 범위를 0-1023으로 매핑
-    return (uint32_t)(speed * 1023 / 100);
+    if (speed > 127) speed = 127;
+    // 0-127 범위를 0-1023으로 매핑
+    return (uint32_t)(speed * 1023 / 127);
 }
 
 static void config_pwm_channel(int gpio_num, ledc_channel_t channel) {
@@ -113,6 +116,35 @@ void custom_motor_set_rear(int8_t speed) {
     else s_motor_state.dir_rear = MOTOR_STOP;
 
     set_motor_pwm(MOTOR_REAR_IN1_CHANNEL, MOTOR_REAR_IN2_CHANNEL, speed);
+}
+
+static void set_motor_brake(ledc_channel_t ch_in1, ledc_channel_t ch_in2, int8_t strength) {
+    // strength: 0~127  (0=코스팅, 127=100% 쇼트 브레이크)
+    if (strength < 0) strength = 0;
+    if (strength > 127) strength = 127;
+    uint32_t duty = (uint32_t)(strength * 1023 / 127);
+    // IN1=PWM, IN2=PWM (동일 duty) → HIGH 구간=브레이크, LOW 구간=코스팅
+    ledc_set_duty(MOTOR_PWM_MODE, ch_in1, duty);
+    ledc_update_duty(MOTOR_PWM_MODE, ch_in1);
+    ledc_set_duty(MOTOR_PWM_MODE, ch_in2, duty);
+    ledc_update_duty(MOTOR_PWM_MODE, ch_in2);
+}
+
+void custom_motor_brake_front(int8_t strength) {
+    s_motor_state.dir_front = MOTOR_BRAKE;
+    s_motor_state.speed_front = 0;
+    set_motor_brake(MOTOR_FRONT_IN1_CHANNEL, MOTOR_FRONT_IN2_CHANNEL, strength);
+}
+
+void custom_motor_brake_rear(int8_t strength) {
+    s_motor_state.dir_rear = MOTOR_BRAKE;
+    s_motor_state.speed_rear = 0;
+    set_motor_brake(MOTOR_REAR_IN1_CHANNEL, MOTOR_REAR_IN2_CHANNEL, strength);
+}
+
+void custom_motor_brake_all(int8_t strength) {
+    custom_motor_brake_front(strength);
+    custom_motor_brake_rear(strength);
 }
 
 void custom_motor_set_both(int8_t front_speed, int8_t rear_speed) {

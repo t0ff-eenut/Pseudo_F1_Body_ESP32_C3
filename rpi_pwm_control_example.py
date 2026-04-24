@@ -12,7 +12,7 @@ class RCCarController:
     
     # 명령어 정의
     CMD_HEARTBEAT = 0x00
-    CMD_CONTROL = 0x01          # 퍼센테이지 제어 (-100 ~ 100)
+    CMD_CONTROL = 0x01          # 풀 레인지 제어 (-127 ~ +127)
     CMD_SET_MODE = 0x02
     CMD_CONTROL_RAW = 0x10      # 직접 PWM 제어 (모터)
     CMD_SERVO_RAW = 0x11        # 직접 PWM 제어 (서보)
@@ -55,22 +55,32 @@ class RCCarController:
         packet = self._create_packet(self.CMD_HEARTBEAT, 0, 0)
         self.ser.write(packet)
         
-    def control_percentage(self, speed, steering):
+    def control(self, speed, steering):
         """
-        퍼센테이지 제어 (권장 방식)
-        :param speed: 속도 (-100 ~ 100)
-        :param steering: 조향 (-100 ~ 100)
+        풀 레인지 제어 (권장 방식)
+        :param speed:    속도 (-127 ~ +127)  음수=후진, 양수=전진
+        :param steering: 조향 (-127 ~ +127)  음수=좌,  양수=우
         """
         # 범위 제한
-        speed = max(-100, min(100, speed))
-        steering = max(-100, min(100, steering))
+        speed = max(-127, min(127, speed))
+        steering = max(-127, min(127, steering))
         
         # signed int8을 unsigned byte로 변환
-        speed_byte = speed if speed >= 0 else (256 + speed)
+        speed_byte    = speed    if speed    >= 0 else (256 + speed)
         steering_byte = steering if steering >= 0 else (256 + steering)
         
         packet = self._create_packet(self.CMD_CONTROL, speed_byte, steering_byte)
         self.ser.write(packet)
+
+    def control_percentage(self, speed, steering):
+        """
+        퍼센테이지 → 풀 레인지 변환 헬퍼
+        :param speed:    속도 (-100 ~ 100)
+        :param steering: 조향 (-100 ~ 100)
+        """
+        speed    = max(-100, min(100, speed))
+        steering = max(-100, min(100, steering))
+        self.control(speed * 127 // 100, steering * 127 // 100)
         
     def control_motor_pwm(self, pwm_value):
         """
@@ -144,7 +154,7 @@ def demo_percentage_control():
         
         # 우회전하며 전진
         print("우회전 30도, 전진 50%")
-        car.control_percentage(speed=50, steering=30)
+        car.control(speed=64, steering=43)  # 50% → 64, 30% → 43
         time.sleep(2)
         
         # 정지

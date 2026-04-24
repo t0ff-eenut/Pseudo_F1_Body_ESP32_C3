@@ -12,10 +12,8 @@
 // 명령어 타입 (Command Types)
 typedef enum {
     CMD_HEARTBEAT       = 0x00, // 연결 확인 (Heartbeat)
-    CMD_CONTROL         = 0x01, // 제어 명령 (param1: 속도 -100~100, param2: 조향 -100~100)
-    CMD_SET_MODE        = 0x02, // 모드 설정 (param1: 모드)
-    CMD_CONTROL_RAW     = 0x10, // 직접 PWM 제어 (param1: 모터 PWM 상위, param2: 모터 PWM 하위)
-    CMD_SERVO_RAW       = 0x11, // 직접 서보 제어 (param1: 서보 PWM 상위, param2: 서보 PWM 하위)
+    CMD_CONTROL         = 0x01, // 제어 명령 (param1: 속도 -127~+127, param2: 조향 -127~+127)
+    CMD_BRAKE           = 0x03, // 브레이크 (param1: 전륜 강도 0~127, param2: 후륜 강도 0~127)
     CMD_EMERGENCY_STOP  = 0xFF  // 비상 정지
 } rc_cmd_type_t;
 
@@ -23,8 +21,8 @@ typedef enum {
 typedef struct {
     uint8_t stx;        // 시작 바이트
     uint8_t cmd;        // 명령어
-    int8_t  param1;     // 파라미터 1 (예: 속도 -100 ~ 100)
-    int8_t  param2;     // 파라미터 2 (예: 조향 -100 ~ 100)
+    int8_t  param1;     // 파라미터 1 (예: 속도 -127 ~ +127)
+    int8_t  param2;     // 파라미터 2 (예: 조향 -127 ~ +127)
     uint8_t checksum;   // 체크섬 (XOR 연산)
     uint8_t etx;        // 종료 바이트
 } __attribute__((packed)) rc_packet_t;

@@ -20,8 +20,8 @@ typedef enum {
 } mde; // 모터 방향 열거형 (Motor Direction Enum)
 
 typedef struct {
-    int8_t speed_front; // -100 ~ 100
-    int8_t speed_rear;  // -100 ~ 100
+    int8_t speed_front; // -127 ~ +127
+    int8_t speed_rear;  // -127 ~ +127
     mde dir_front;
     mde dir_rear;
 } mss; // 모터 상태 구조체 (Motor State Struct)
@@ -34,13 +34,13 @@ bool custom_motor_init(void);
 
 /**
  * @brief 전륜 모터 속도 설정
- * @param speed -100 (최대 후진) ~ 100 (최대 전진)
+ * @param speed -127 (최대 후진) ~ +127 (최대 전진)
  */
 void custom_motor_set_front(int8_t speed);
 
 /**
  * @brief 후륜 모터 속도 설정
- * @param speed -100 (최대 후진) ~ 100 (최대 전진)
+ * @param speed -127 (최대 후진) ~ +127 (최대 전진)
  */
 void custom_motor_set_rear(int8_t speed);
 
@@ -53,6 +53,24 @@ void custom_motor_set_both(int8_t front_speed, int8_t rear_speed);
  * @brief 모든 모터 정지 (Coast)
  */
 void custom_motor_stop_all(void);
+
+/**
+ * @brief 전륜 모터 브레이크
+ * @param strength 0 (코스팅) ~ 127 (100% 쇼트 브레이크)
+ */
+void custom_motor_brake_front(int8_t strength);
+
+/**
+ * @brief 후륜 모터 브레이크
+ * @param strength 0 (코스팅) ~ 127 (100% 쇼트 브레이크)
+ */
+void custom_motor_brake_rear(int8_t strength);
+
+/**
+ * @brief 양쪽 모터 브레이크
+ * @param strength 0 (코스팅) ~ 127 (100% 쇼트 브레이크)
+ */
+void custom_motor_brake_all(int8_t strength);
 
 /**
  * @brief 현재 모터 상태 가져오기
