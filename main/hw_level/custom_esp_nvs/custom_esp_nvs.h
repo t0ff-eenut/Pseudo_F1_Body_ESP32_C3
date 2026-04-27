@@ -145,7 +145,7 @@ extern const char *nvs_namespaces[NVS_NAMESPACE_MAX];
  * @todo        todo
  * @bug         bug
  */
-char* nvs_handle_to_string(const enhe input_enhe_value);
+const char* nvs_handle_to_string(const enhe input_enhe_value);
 
 /**
  * @brief       ######

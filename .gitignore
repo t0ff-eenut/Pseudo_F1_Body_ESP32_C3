@@ -1,0 +1,19 @@
+# ESP-IDF build output
+build/
+
+# Managed components (auto-downloaded)
+managed_components/
+
+# ESP-IDF config backup
+sdkconfig.old
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store

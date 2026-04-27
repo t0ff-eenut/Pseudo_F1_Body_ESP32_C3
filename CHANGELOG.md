@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.1] - 2026-04-27
+
+### Fixed
+
+#### COM 포트 연결/해제 시 ESP32 의도치 않은 동작 (`pc_uart_controller.py`)
+- **연결 시 모터 순간 구동 버그**
+  - 원인: `serial.Serial(port, ...)` 생성자가 DTR=True 상태로 포트를 열고, 이후 `dtr=False`를 설정하면서 DTR 펄스가 발생 → ESP32 자동 리셋 트리거
+  - 수정: `Serial()` 객체 생성 후 `dtr=False`, `rts=False` 설정 → `open()` 호출 순서로 변경하여 포트 열기 시점부터 DTR 없이 동작
+- **연결 해제 시 모터 순간 구동 버그**
+  - 원인: `ser.close()` 호출 시 OS가 DTR을 토글 → ESP32 리셋 → 부팅 중 PWM 초기화 직전 순간 모터 반응
+  - 수정: `close()` 전에 `dtr=False`, `rts=False` 명시적 설정 후 50ms 대기
+  - 추가: 포트 닫기 전 긴급정지 패킷(0xFF) 전송 및 재전송 스레드 `join()` 대기 → 레이스 컨디션 방지
+
+---
+
+## [1.2.0] - 2026-04-27
+
+### Added
+
+#### PC UART 제어 UI (`pc_uart_controller.py`)
+- Python tkinter 기반 PC 제어 UI 신규 작성
+- 스로틀(-127~+127) / 조향(-127~+127) 슬라이더로 실시간 제어
+- 브레이크(전/후륜 독립) 및 긴급정지(0xFF) 버튼
+- WASD 키보드 단축키 지원 (W/S=전진·후진, A/D=조향, Space=전체 정지)
+- 하트비트 자동 전송 체크박스
+- **Failsafe 방지용 150ms 주기 자동 재전송 루프** (슬라이더 고정 시에도 ESP 감속 방지)
+- 전송 로그 패널 (HH:MM:SS + 패킷 HEX 표시)
+- COM 포트 자동 탐색 및 새로고침
+
+#### USB Serial/JTAG 드라이버 기반 수신 (`hal_level/custom_esp_uart`)
+- UART_NUM_1 (GPIO 20/21) 방식 → `usb_serial_jtag_driver` 방식으로 교체
+- 플래싱에 사용하는 USB 포트(동일 COM 포트)로 PC ↔ ESP32 양방향 통신 가능
+- `usb_serial_jtag_vfs_use_driver()` 호출로 printf 콘솔과 드라이버 충돌 방지
+  - 기존: 기본 콘솔 VFS와 드라이버가 동일 RX 인터럽트를 경쟁 → PC 패킷 미수신
+  - 수정: VFS 경로를 드라이버로 통일 → 정상 수신
+
+#### `.gitignore`
+- `build/`, `managed_components/`, `sdkconfig.old`, Python 캐시, `.vscode/` 제외 설정 추가
+
+### Changed
+
+#### MOTOR_TEST 비활성화 (`main/project_top.h`)
+- `MOTOR_TEST true` → `false` (일반 UART 제어 모드로 전환)
+
+### Fixed
+
+#### ESP-IDF v6.0 헤더 경로 분리 대응 (`main/CMakeLists.txt`)
+- `driver/gpio.h` → `esp_driver_gpio` 컴포넌트로 분리됨 → `REQUIRES`에 추가
+- `driver/uart.h` → `esp_driver_uart` 컴포넌트로 분리됨 → `REQUIRES`에 추가
+- `driver/usb_serial_jtag_vfs.h` 의존성 → `esp_driver_usb_serial_jtag`, `vfs` 추가
+
+#### 빌드 경고·에러 수정
+- `custom_esp_motor.c`: `int8_t`는 최대 127이므로 `> 127` 비교 항상 false → 해당 줄 제거 (2곳)
+- `custom_esp_motor.c`: 미사용 `custom_esp_motor_TAG` 변수 제거
+- `custom_esp_nvs.c` / `.h`: `const char*` 배열 반환 함수의 반환 타입 `char*` → `const char*` 수정
+
+---
+
 ## [1.1.0] - 2026-04-24
 
 ### Added

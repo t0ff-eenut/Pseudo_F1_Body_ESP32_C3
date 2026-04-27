@@ -17,7 +17,11 @@
     REQUIRES 
         esp_timer
         driver
+        esp_driver_gpio
+        esp_driver_uart
         esp_driver_ledc
+        esp_driver_usb_serial_jtag
+        vfs
         led_strip
         nvs_flash 
     )  # Managed Components

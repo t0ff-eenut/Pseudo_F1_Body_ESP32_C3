@@ -18,7 +18,6 @@
 #include "custom_esp_motor.h"
 
 #define MOTOR_DEBUG DEBUG
-static const char *custom_esp_motor_TAG = "[@]custom_esp_motor.c";
 
 static mss s_motor_state = {
     .speed_front = 0,
@@ -29,7 +28,6 @@ static mss s_motor_state = {
 
 static uint32_t speed_to_duty(int8_t speed) {
     if (speed < 0) speed = -speed;
-    if (speed > 127) speed = 127;
     // 0-127 범위를 0-1023으로 매핑
     return (uint32_t)(speed * 1023 / 127);
 }
@@ -121,7 +119,6 @@ void custom_motor_set_rear(int8_t speed) {
 static void set_motor_brake(ledc_channel_t ch_in1, ledc_channel_t ch_in2, int8_t strength) {
     // strength: 0~127  (0=코스팅, 127=100% 쇼트 브레이크)
     if (strength < 0) strength = 0;
-    if (strength > 127) strength = 127;
     uint32_t duty = (uint32_t)(strength * 1023 / 127);
     // IN1=PWM, IN2=PWM (동일 duty) → HIGH 구간=브레이크, LOW 구간=코스팅
     ledc_set_duty(MOTOR_PWM_MODE, ch_in1, duty);

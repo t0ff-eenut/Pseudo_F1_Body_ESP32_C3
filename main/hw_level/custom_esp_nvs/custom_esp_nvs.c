@@ -38,7 +38,7 @@ static const char* A_c_nvs_namespaces[NVS_NAMESPACE_MAX] = {
 };
 
 // enhe → str 변환
-char* nvs_handle_to_string(const enhe input_enhe_value){
+const char* nvs_handle_to_string(const enhe input_enhe_value){
     if (input_enhe_value >= 0 && input_enhe_value < NVS_NAMESPACE_MAX)
         return A_c_nvs_namespaces[input_enhe_value];
     else
