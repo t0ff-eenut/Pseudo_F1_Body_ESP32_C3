@@ -11,9 +11,10 @@
 
 // 명령어 타입 (Command Types)
 typedef enum {
-    CMD_HEARTBEAT       = 0x00, // 연결 확인 (Heartbeat)
+    CMD_HEARTBEAT       = 0x00, // 연결 확인 (Heartbeat) → ESP32가 CMD_ACK로 응답
     CMD_CONTROL         = 0x01, // 제어 명령 (param1: 속도 -127~+127, param2: 조향 -127~+127)
     CMD_BRAKE           = 0x03, // 브레이크 (param1: 전륜 강도 0~127, param2: 후륜 강도 0~127)
+    CMD_ACK             = 0xA0, // Heartbeat 응답 (ESP32 → RPi)
     CMD_EMERGENCY_STOP  = 0xFF  // 비상 정지
 } rc_cmd_type_t;
 

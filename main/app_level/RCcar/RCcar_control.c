@@ -89,10 +89,15 @@ void rccar_control_process_byte(uint8_t byte) {
                 s_last_packet_ms = (uint32_t)(esp_timer_get_time() / 1000);
                 break;
 
-            case CMD_HEARTBEAT:
+            case CMD_HEARTBEAT: {
                 // 워치독 리셋 - 페일세이프 타이머 갱신
                 s_last_packet_ms = (uint32_t)(esp_timer_get_time() / 1000);
+                // ACK 패킷 응답 (RPi가 연결 확인에 사용)
+                rc_packet_t ack;
+                rccar_protocol_create_packet(CMD_ACK, 0, 0, &ack);
+                custom_uart_send_data((const uint8_t *)&ack, sizeof(ack));
                 break;
+            }
 
             default:
                 break;
